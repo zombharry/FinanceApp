@@ -1,0 +1,21 @@
+﻿@model FinanceApp.Dtos.ExpenseEditDto
+
+<div class="container">
+    <h2></h2>
+    <form asp-action="Edit" method="post">
+        <input type="hidden" name="Id" asp-for="Id">
+        <div>
+            <label asp-for="Description" class="form-label"></label>
+            <input asp-for="Description" class="form-control" />
+        </div>
+        <div>
+            <label asp-for="Amount" class="form-label"></label>
+            <input asp-for="Amount" class="form-control" />
+        </div>
+        <div>
+            <label asp-for="Category" class="form-label"></label>
+            <input asp-for="Category" class="form-control" />
+        </div>
+        <button type="submit" class="btn btn-primary">Edit Expense</button>
+    </form>
+</div>
