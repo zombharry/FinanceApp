@@ -4,7 +4,7 @@ namespace FinanceApp.Data.Service;
 
 public interface IExpensesService
 {
-    Task<IEnumerable<Expense>> GetAllAsync();
+    Task<IEnumerable<Expense>> GetAllAsync(string userId);
 
     Task<Expense> GetByIdAsync(int id);
 

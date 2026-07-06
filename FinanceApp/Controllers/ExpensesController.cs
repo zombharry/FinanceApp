@@ -2,13 +2,17 @@
 using FinanceApp.Data.Service;
 using FinanceApp.Dtos;
 using FinanceApp.Exceptions;
+using FinanceApp.Filters;
 using FinanceApp.Models;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace FinanceApp.Controllers;
 
+[Authorize]
 public class ExpensesController : Controller
 {
     private readonly IExpensesService _expensesService;
@@ -33,7 +37,8 @@ public class ExpensesController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var expenses = await _expensesService.GetAllAsync();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var expenses = await _expensesService.GetAllAsync(userId);
 
         var expenseDtos = expenses.Select(expense =>
         new ExpenseGetDto(
@@ -44,7 +49,6 @@ public class ExpensesController : Controller
            DateOnly.FromDateTime(expense.Date)
        ));
 
-
         return View(expenseDtos);
     }
 
@@ -53,16 +57,9 @@ public class ExpensesController : Controller
         return View();
     }
 
+    [ServiceFilter(typeof(UserFilter))]
     public async Task<IActionResult> Edit(int id, string returnUrl)
     {
-        var expenseExists = await _existingIdValidator.ValidateAsync(id);
-        if (!expenseExists.IsValid)
-        {
-            TempData["error"] = string.Join(
-                "<br/>",
-                expenseExists.Errors.Select(x => x.ErrorMessage));
-            return Redirect(returnUrl ?? "/");
-        }
         var expense = await _expensesService.GetByIdAsync(id);
         var validatorResult = await _expenseGetValidator.ValidateAsync(expense);
         if (!validatorResult.IsValid)
@@ -101,12 +98,15 @@ public class ExpensesController : Controller
 
             return View(expenseDto);
         }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var expense = new Expense
         { 
             Description = expenseDto.Description,
             Amount = expenseDto.Amount,
             Category = expenseDto.Category,
-            Date = DateTime.UtcNow
+            Date = DateTime.UtcNow,
+            UserId = userId
         };
 
         TempData["success"] = "Expense has been created successfully";
@@ -116,6 +116,7 @@ public class ExpensesController : Controller
     }
 
     [HttpPost]
+    [ServiceFilter(typeof(UserFilter))]
     public async Task<ActionResult> Edit(ExpenseEditDto expenseEditDto, string returnUrl)
     {
         var validatorResult = await _expenseEditValidator.ValidateAsync(expenseEditDto);
@@ -127,13 +128,16 @@ public class ExpensesController : Controller
 
             return Redirect(returnUrl ?? "/");
         }
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
         var expense = new Expense
         {
             Id = expenseEditDto.Id,
             Description = expenseEditDto.Description,
             Amount = expenseEditDto.Amount,
             Category = expenseEditDto.Category,
-            Date = expenseEditDto.Date.ToDateTime(new TimeOnly(0, 0, 0))
+            Date = expenseEditDto.Date.ToDateTime(new TimeOnly(0, 0, 0)),
+            UserId = userId
         };
 
         await _expensesService.EditAsync(expense);
@@ -141,17 +145,9 @@ public class ExpensesController : Controller
         return RedirectToAction("Index");
     }
 
+    [ServiceFilter(typeof(UserFilter))]
     public async Task<ActionResult> Delete(int id, string returnUrl)
     {
-        var expenseExists = await _existingIdValidator.ValidateAsync(id);
-        if (!expenseExists.IsValid)
-        {
-            TempData["error"] = string.Join(
-                "<br/>",
-                expenseExists.Errors.Select(x => x.ErrorMessage));
-            return Redirect(returnUrl ?? "/");
-        }
-
         await _expensesService.DeleteAsync(id);
         TempData["success"] = "Expense has been deleted successfully";
         return RedirectToAction("Index");

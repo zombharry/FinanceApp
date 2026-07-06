@@ -37,9 +37,9 @@ public class ExpensesService : IExpensesService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<Expense>> GetAllAsync()
+    public async Task<IEnumerable<Expense>> GetAllAsync(string userId)
     {
-        var expenses = await _context.Expenses.ToListAsync();
+        var expenses = await _context.Expenses.Where(expense => expense.UserId.Equals(userId)).ToListAsync();
         return expenses;
     }
     public async Task<Expense> GetByIdAsync(int id)

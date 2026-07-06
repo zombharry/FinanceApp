@@ -7,16 +7,29 @@ using FinanceApp.Validators;
 using FluentValidation;
 using Microsoft.AspNetCore.Http.Features;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using FinanceApp.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnectionString");
-builder.Services.AddSqlite<FinanceContext>(connectionString);
+var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnectionString");
+var identityConnection = builder.Configuration.GetConnectionString("IdentityContext"); 
+
+// Use SQL Server for both application and identity databases
+builder.Services.AddDbContext<IdentityContext>(options => options.UseSqlite(identityConnection));
+
+builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddEntityFrameworkStores<IdentityContext>();
+
+builder.Services.AddDbContext<FinanceContext>(options => options.UseSqlite(defaultConnection));
 builder.Services.AddScoped<IExpensesService, ExpensesService>();
 
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+
+builder.Services.AddScoped<UserFilter>();
 
 builder.Services.AddProblemDetails(options =>
 {
@@ -50,18 +63,20 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
-
 app.UseExceptionHandler();
 
+// Enable authentication and authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Expenses}/{action=Index}/{id?}")
+    pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
+app.MapRazorPages();
 app.UseExceptionHandler();
 
 app.UseStatusCodePages();
