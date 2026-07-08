@@ -1,15 +1,12 @@
+using System.Text;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using FluentValidation;
+using FinanceApp.Filters;
 using FinanceApp.Data;
 using FinanceApp.Data.Service;
-using FinanceApp.Exceptions;
 using FinanceApp.Handlers;
-using FinanceApp.Models;
-using FinanceApp.Validators;
-using FluentValidation;
-using Microsoft.AspNetCore.Http.Features;
-using System.Diagnostics;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using FinanceApp.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnectionString");
 var identityConnection = builder.Configuration.GetConnectionString("IdentityContext"); 
+
 
 // Use SQL Server for both application and identity databases
 builder.Services.AddDbContext<IdentityContext>(options => options.UseSqlite(identityConnection));
@@ -43,6 +41,10 @@ builder.Services.AddProblemDetails(options =>
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
+builder.Services.AddRazorPages();
 
 builder.Logging.AddOpenTelemetry(logging =>
 {
