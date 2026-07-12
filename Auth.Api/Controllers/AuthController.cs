@@ -1,90 +1,78 @@
 ﻿using Auth.Api.Data;
 using Auth.Api.DTOs;
-using Auth.Api.Exceptions;
 using Auth.Api.Services;
-using Auth.Api.Validation;
-using FluentValidation;
-using FluentValidation.Results;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Auth.Api.Controllers;
 
-public class AuthController : Controller
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly IJwtTokenService _jwtService;
-    private readonly IValidator<RegisterRequest> _registerRequestValidator;
-    private readonly IValidator<LoginRequest> _loginRequestValidator;
+    private readonly IJwtTokenService _jwt;
 
-    public AuthController(
-        UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager,
-        IJwtTokenService jwtService,
-        IValidator<LoginRequest> loginRequestValidator,
-        IValidator<RegisterRequest> registerRequestValidator)
+    public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenService jwt)
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _jwtService = jwtService;
-        _loginRequestValidator = loginRequestValidator;
-        _registerRequestValidator = registerRequestValidator;
+        _jwt = jwt;
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterRequest request)
+    public async Task<IActionResult> Register([FromBody] RegisterRequest req)
     {
-        //Fluent Validátor a jelszavak egyezőségét itt ellenőrizni fogja
-        var validationResult = await _registerRequestValidator.ValidateAsync(request);
-        if (!validationResult.IsValid)
+        if (!ModelState.IsValid)
         {
-            throw new ValidationFailedException(validationResult.Errors);
+            return BadRequest(ModelState);
+        }
+        
+        var existing = await _userManager.FindByNameAsync(req.Username);
+        if (existing is not null)
+        {
+            return Conflict("User already exists");
         }
 
         var user = new ApplicationUser
         {
-            UserName = request.Email,
-            Email = request.Email
+            UserName = req.Username,
+            Email = req.Email
         };
-
-        var result = await _userManager.CreateAsync(user, request.Password);
-
-        if (!result.Succeeded) 
-        { 
-            throw new ValidationFailedException(
-                result.Errors.Select(e =>
-                new ValidationFailure(e.Code, e.Description))); 
+        var result = await _userManager.CreateAsync(user, req.Password);
+        
+        if (!result.Succeeded)
+        {
+            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+            return BadRequest(errors);
         }
 
-        return Ok();
+        return Ok(_jwt.CreateTokenAsync(user));
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest req)
     {
-        var validationResult = await _loginRequestValidator.ValidateAsync(request);
-        if (!validationResult.IsValid)
+        if (!ModelState.IsValid)
         {
-            throw new ValidationException(validationResult.Errors);
+            return BadRequest(ModelState);
         }
 
-        var user = await _userManager.FindByEmailAsync(request.Email);
-
+        var user = await _userManager.FindByNameAsync(req.Username);
         if (user is null)
-        {
-            throw new UnauthorizedException("Invalid email or password.");
+        { 
+            return Unauthorized();
         }
 
-        var validPassword = await _userManager.CheckPasswordAsync(user, request.Password);
-
-        if (!validPassword)
+        var valid = await _signInManager.CheckPasswordSignInAsync(user, req.Password, false);
+        if (!valid.Succeeded)
         {
-            throw new UnauthorizedException("Invalid email or password.");
+            return Unauthorized();
         }
 
-        var token = await _jwtService.CreateTokenAsync(user);
-
-        return Ok(token);
+        var token = await _jwt.CreateTokenAsync(user);
+        return Ok(new { access_token = token });
     }
 }

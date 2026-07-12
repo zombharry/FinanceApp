@@ -4,50 +4,58 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Auth.Api.Handlers;
 
-public class GlobalExceptionHandler : IExceptionHandler
+internal sealed class GlobalExceptionHandler(IProblemDetailsService problemDetailsService) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        var problem = new ProblemDetails();
+        var (statusCode, title) = MapException(exception);
+        httpContext.Response.StatusCode = statusCode;
 
-        switch (exception)
+        var problemDetails = new ProblemDetails
         {
-            case ValidationFailedException validation:
-                problem.Status = StatusCodes.Status400BadRequest;
-                problem.Title = "Validation failed";
-                problem.Detail = "One or more validation errors occured";
+            Status = statusCode,
+            Title = title,
+            Type = GetProblemType(statusCode),
+            Instance = httpContext.Request.Path,
+            Detail = GetSafeErrorMessage(exception, httpContext)
+        };
 
-                problem.Extensions["errors"] =
-                    validation.Errors
-                    .GroupBy(e => e.PropertyName)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.Select(e => e.ErrorMessage));
-                break;
+        problemDetails.Extensions["traceId"] = httpContext.TraceIdentifier;
+        problemDetails.Extensions["timestamp"] = DateTime.UtcNow;
 
-            case UnauthorizedException:
-                problem.Status = StatusCodes.Status401Unauthorized;
-                problem.Title = "Unauthorized";
-                problem.Detail = exception.Message;
-                break;
+        return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+        {
+            HttpContext = httpContext,
+            ProblemDetails = problemDetails
+        });
+    }
+    private static (int StatusCode, string Title) MapException(Exception exception) => exception switch
+    {
+        NotFoundException => (StatusCodes.Status400BadRequest, "Item not found"),
+        ValidationFailedException => (StatusCodes.Status400BadRequest, "Bad Request"),
+        UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+        _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
+    };
 
-            case NotFoundException:
-                problem.Status = StatusCodes.Status404NotFound;
-                problem.Title = "Resource not found";
-                problem.Detail = exception.Message;
-                break;
+    private static string GetProblemType(int statusCode) => statusCode switch
+    {
+        400 => "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        401 => "https://tools.ietf.org/html/rfc9110#section-15.5.2",
+        403 => "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+        404 => "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+        409 => "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+        _ => "https://tools.ietf.org/html/rfc9110#section-15.6.1"
+    };
 
-            default:
-                problem.Status = StatusCodes.Status500InternalServerError;
-                problem.Title = "Internal Server Error";
-                problem.Detail = "Unexpected error.";
-                break;
+
+    private static string? GetSafeErrorMessage(Exception exception, HttpContext context)
+    {
+        var env = context.RequestServices.GetRequiredService<IHostEnvironment>();
+        if (env.IsDevelopment())
+        {
+            return exception.Message;
         }
 
-        httpContext.Response.StatusCode = problem.Status.Value;
-
-        await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
-
-        return true;
+        return exception is NotFoundException ? exception.Message : null;
     }
 }

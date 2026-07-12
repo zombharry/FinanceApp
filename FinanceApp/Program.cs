@@ -1,32 +1,48 @@
-using System.Text;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using FluentValidation;
-using FinanceApp.Filters;
 using FinanceApp.Data;
-using FinanceApp.Data.Service;
+using FinanceApp.Filters;
 using FinanceApp.Handlers;
+using FinanceApp.Services;
+using FluentValidation;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnectionString");
+var identityConnection = builder.Configuration.GetConnectionString("IdentityContext");
+
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var keyBytes = Encoding.UTF8.GetBytes(jwtSection["Key"]);
+var tokenValidationParameters = new TokenValidationParameters
+{
+    ValidateIssuer = true,
+    ValidIssuer = jwtSection["Issuer"],
+    ValidateAudience = true,
+    ValidAudience = jwtSection["Audience"],
+    ValidateIssuerSigningKey = true,
+    IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+    ValidateLifetime = Convert.ToBoolean(jwtSection["ValidateLifetime"] ?? "true")
+};
+
+builder.Services.AddSingleton(tokenValidationParameters);
+
+builder.Services.AddHttpClient("AuthApi", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["AuthApi:BaseUrl"]);
+});
+
+builder.Services.AddScoped<FinanceApp.Services.AuthApiClient>();
+
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnectionString");
-var identityConnection = builder.Configuration.GetConnectionString("IdentityContext"); 
-
-
-// Use SQL Server for both application and identity databases
-builder.Services.AddDbContext<IdentityContext>(options => options.UseSqlite(identityConnection));
-
-builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<IdentityContext>();
 
 builder.Services.AddDbContext<FinanceContext>(options => options.UseSqlite(defaultConnection));
 builder.Services.AddScoped<IExpensesService, ExpensesService>();
-
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
-
 builder.Services.AddScoped<UserFilter>();
 
 builder.Services.AddProblemDetails(options =>
@@ -42,7 +58,16 @@ builder.Services.AddProblemDetails(options =>
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-builder.Services.AddAuthentication();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // require HTTPS
+    });
+
 builder.Services.AddAuthorization();
 builder.Services.AddRazorPages();
 

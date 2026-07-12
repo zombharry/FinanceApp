@@ -1,4 +1,4 @@
-﻿using FinanceApp.Models;
+﻿using FinanceApp.Data;
 using FluentValidation;
 
 namespace FinanceApp.Validators;

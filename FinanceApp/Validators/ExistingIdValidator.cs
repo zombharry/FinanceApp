@@ -1,5 +1,5 @@
-﻿using FinanceApp.Data.Service;
-using FinanceApp.Dtos;
+﻿using FinanceApp.Dtos;
+using FinanceApp.Services;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore.Internal;
 

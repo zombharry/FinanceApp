@@ -1,6 +1,7 @@
 using Auth.Api.Data;
 using Auth.Api.Handlers;
 using Auth.Api.Options;
+using Auth.Api.Services;
 using Auth.Api.Validation;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,6 +10,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+        .MinimumLevel.Debug()
+        .WriteTo.Console()
+        .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
+        .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,13 +63,17 @@ builder.Services
                 IssuerSigningKey =
                     new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(
-                            builder.Configuration["Jwt:Key"]))
+                            builder.Configuration["Jwt:Key"])),
             };
     });
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddProblemDetails();
+
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+builder.Host.UseSerilog();
 
 var app = builder.Build();
 

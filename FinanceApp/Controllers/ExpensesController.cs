@@ -1,13 +1,10 @@
 ﻿using FinanceApp.Data;
-using FinanceApp.Data.Service;
 using FinanceApp.Dtos;
-using FinanceApp.Exceptions;
 using FinanceApp.Filters;
-using FinanceApp.Models;
+using FinanceApp.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace FinanceApp.Controllers;
@@ -19,20 +16,17 @@ public class ExpensesController : Controller
     private readonly IValidator<ExpenseEditDto> _expenseEditValidator;
     private readonly IValidator<ExpenseCreateDto> _expenseCreateValidator;
     private readonly IValidator<Expense> _expenseGetValidator;
-    private readonly IValidator<int> _existingIdValidator;
 
     public ExpensesController(IExpensesService expensesService,
         IValidator<ExpenseEditDto> expenseEditValidator,
         IValidator<ExpenseCreateDto> expenseCreateValidator,
-        IValidator<Expense> expenseGetValidator,
-        IValidator<int> existingIdValidator
+        IValidator<Expense> expenseGetValidator
         )
     {
         _expensesService = expensesService;
         _expenseEditValidator = expenseEditValidator;
         _expenseCreateValidator = expenseCreateValidator;
         _expenseGetValidator = expenseGetValidator;
-        _existingIdValidator = existingIdValidator;
     }
 
     public async Task<IActionResult> Index()
