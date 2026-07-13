@@ -76,4 +76,17 @@ public class AuthApiClient
         var body = await resp.Content.ReadAsStringAsync();
         return (false, string.IsNullOrWhiteSpace(body) ? resp.ReasonPhrase : body);
     }
+
+    public async Task<(bool Success, string? Error)> LogOut()
+    {
+       var response = _http.PostAsync("/api/auth/logout", null);
+
+        if (response.IsCompletedSuccessfully)
+        {
+            return (true, null);
+        }
+
+        var body = await response.Result.Content.ReadAsStringAsync();
+        return (false, string.IsNullOrWhiteSpace(body) ? response.IsFaulted.ToString() : body);
+    }
 }

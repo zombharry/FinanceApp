@@ -98,4 +98,12 @@ public class AccountController : Controller
         return RedirectToAction("Login", new { returnUrl = model.ReturnUrl });
 
     }
+
+    [HttpPost]
+    public async Task<IActionResult> Logout()
+    {
+        var logOut = _authApi.LogOut();
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return RedirectToAction("Index", "Home");
+    }
 }

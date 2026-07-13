@@ -75,4 +75,11 @@ public class AuthController : ControllerBase
         var token = await _jwt.CreateTokenAsync(user);
         return Ok(new { access_token = token });
     }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        await _signInManager.SignOutAsync();
+        return Ok();
+    }
 }
