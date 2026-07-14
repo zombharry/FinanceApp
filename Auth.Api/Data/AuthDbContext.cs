@@ -10,4 +10,5 @@ public class AuthDbContext : IdentityDbContext<ApplicationUser>
     {
         
     }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 }
