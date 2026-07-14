@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="Auth.Api/Auth.Api.csproj" Id="7e9425b3-5de4-4e58-a3e7-2710b8fc5c52" />
   <Project Path="FinanceApp/FinanceApp.csproj" />
+  <Project Path="Item.Api/Item.Api.csproj" Id="b3f90c99-0192-468a-9708-31529b71e9ac" />
 </Solution>
