@@ -1,0 +1,16 @@
+﻿namespace Item.Api.DTO;
+
+public class ProductEditDTO
+{
+    public string Id { get; set; }
+
+    public string Name { get; set; }
+
+    public string Description { get; set; }
+
+    public List<string> Categories { get; set; }
+
+    public double? Price { get; set; }
+
+    public string OwnerId { get; set; }
+}
