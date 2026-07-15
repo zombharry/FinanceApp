@@ -8,9 +8,9 @@ public class ProductCreateDTO
 
     public string Description { get; set; }
 
-    public List<string> Categories { get; set; }
-
     public double? Price { get; set; }
+
+    public Guid CategoryId { get; set; }
 
     public string OwnerId { get; set; }
 }

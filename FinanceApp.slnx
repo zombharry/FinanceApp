@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="ApiClient/ApiClient.csproj" Id="0d7222be-9f9c-41e7-a9cc-ae9556e6ebe3" />
+  <Project Path="ApiGateway/ApiGateway.csproj" Id="cba00e5d-7295-416f-ba28-b9ac51dcef9f" />
   <Project Path="Auth.Api/Auth.Api.csproj" Id="7e9425b3-5de4-4e58-a3e7-2710b8fc5c52" />
   <Project Path="FinanceApp/FinanceApp.csproj" />
   <Project Path="Item.Api/Item.Api.csproj" Id="b3f90c99-0192-468a-9708-31529b71e9ac" />

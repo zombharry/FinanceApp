@@ -1,3 +1,6 @@
+using Item.Api.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -5,6 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnectionString");
+
+builder.Services.AddDbContext<ProductDbContext>(options => options.UseSqlite(defaultConnection));
 
 var app = builder.Build();
 

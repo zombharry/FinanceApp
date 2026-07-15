@@ -5,9 +5,9 @@ namespace Item.Api.Services
 {
     public class CategoryService : ICategoryService
     {
-        private readonly ItemDbContext _context;
+        private readonly ProductDbContext _context;
 
-        public CategoryService(ItemDbContext context)
+        public CategoryService(ProductDbContext context)
         {
             _context = context;
         }

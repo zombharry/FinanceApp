@@ -8,7 +8,7 @@ public class ProductEditDTO
 
     public string Description { get; set; }
 
-    public List<string> Categories { get; set; }
+    public Guid CategoryId { get; set; }
 
     public double? Price { get; set; }
 

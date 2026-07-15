@@ -7,8 +7,8 @@ namespace Item.Api.Services
 
     public class ProductService : IProductService
     {
-        private readonly ItemDbContext _context;
-        public ProductService(ItemDbContext context)
+        private readonly ProductDbContext _context;
+        public ProductService(ProductDbContext context)
         {
             _context = context;
         }
