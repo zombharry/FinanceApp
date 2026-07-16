@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 
 namespace Api.Client.Client.Services;
 
-public class AuthService
+public class AuthService : IAuthService
 {
     private readonly TokenStore _tokenStore;
     private readonly HttpClient _httpClient;
@@ -14,7 +14,7 @@ public class AuthService
         _tokenStore = tokenStore;
         _httpClient = httpClient;
     }
-    public async Task LoginAsync(LoginRequest request)
+    public async Task<TokenPair> LoginAsync(LoginRequest request)
     {
         var response = await _httpClient.PostAsJsonAsync("api/auth/login", request);
 
@@ -23,15 +23,18 @@ public class AuthService
         var tokenPair = await response.Content.ReadFromJsonAsync<TokenPair>();
 
         _tokenStore.Set(tokenPair!);
+
+        return tokenPair;
     }
 
     Task RegisterAsync()
-    { 
-        return null; 
+    {
+        return null;
     }
 
-    Task LogoutAsync()
-    { 
-        return null; 
+    public async Task LogoutAsync()
+    {
+        _tokenStore.Clear();
+        //NotifyUserLogout
     }
 }
