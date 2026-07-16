@@ -13,13 +13,13 @@ public class AuthController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly IJwtTokenService _jwt;
+    private readonly ITokenService _tokenService;
 
-    public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenService jwt)
+    public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ITokenService tokenService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _jwt = jwt;
+        _tokenService = tokenService;
     }
 
     [HttpPost("register")]
@@ -49,7 +49,7 @@ public class AuthController : ControllerBase
             return BadRequest(errors);
         }
 
-        return Ok(_jwt.CreateTokenAsync(user));
+        return Ok(_tokenService.CreateAccessTokenAsync(user));
     }
 
     [HttpPost("login")]
@@ -72,14 +72,28 @@ public class AuthController : ControllerBase
             return Unauthorized();
         }
 
-        var token = await _jwt.CreateTokenAsync(user);
-        return Ok(new { access_token = token });
+        var accesToken = await _tokenService.CreateAccessTokenAsync(user);
+        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user.Id);
+        return Ok(new TokenPair(accesToken,refreshToken.Token));
     }
 
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout()
+    public async Task<IActionResult> Logout(LogoutRequest req)
     {
+        var user = await _userManager.FindByNameAsync(req.Username);
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+        await _tokenService.RevokeRefreshTokenAsync(user.Id);
         await _signInManager.SignOutAsync();
         return Ok();
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(string refreshToken)
+    {
+        var tokenPair = await _tokenService.RefreshAccessTokenAsync(refreshToken);
+        return Ok(tokenPair);
     }
 }
