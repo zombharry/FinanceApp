@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Components;
 using System.Text;
 using System.Text.Json;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using static System.Net.WebRequestMethods;
 
 namespace Client.App.Services;
@@ -55,10 +57,7 @@ public class AuthService
 
         foreach (var prop in doc.RootElement.EnumerateObject())
         {
-            if (string.Equals(prop.Name, "access_token", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(prop.Name, "token", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(prop.Name, "Token", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(prop.Name, "accessToken", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(prop.Name, "accessToken", StringComparison.OrdinalIgnoreCase))
             {
                 if (prop.Value.ValueKind == JsonValueKind.String)
                 {
@@ -83,6 +82,37 @@ public class AuthService
         return null;
     }
 
+    public async Task<DTO.UserInfo?> GetUserInfoAsync()
+    {
+        var token = await _accessTokenService.GetAccessTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+            return null;
+
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(token);
+
+            var userInfo = new DTO.UserInfo();
+            // common claim types: name, unique_name, sub, email
+            userInfo.Username = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name || c.Type == "unique_name" || c.Type == "name" || c.Type == "sub")?.Value;
+            userInfo.Email = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email || c.Type == "email")?.Value;
+
+            foreach (var c in jwt.Claims)
+            {
+                if (!userInfo.Claims.ContainsKey(c.Type))
+                    userInfo.Claims[c.Type] = c.Value;
+            }
+
+            return userInfo;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "GetUserInfo: failed to read token");
+            return null;
+        }
+    }
+
     public async Task<(bool Success, string? Error)> RegisterAsync(string username, string email, string password)
     {
         var payload = new { username, email, password };
@@ -100,7 +130,8 @@ public class AuthService
 
     public async Task LogOut(string username)
     {
-        var content = new StringContent(JsonSerializer.Serialize(username), Encoding.UTF8, "application/json");
+        var payload = new { username };
+        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         var response = await _httpClient.PostAsync("/api/auth/logout", content);
 
         if (response.IsSuccessStatusCode)
@@ -108,8 +139,10 @@ public class AuthService
             await _accessTokenService.RemoveAccessTokenAsync();
             _navigationManager.NavigateTo("/login", forceLoad: true);
         }
-
-        //var body = await response.Result.Content.ReadAsStringAsync();
-        //return (false, string.IsNullOrWhiteSpace(body) ? response.IsFaulted.ToString() : body);
+        else
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            _logger?.LogWarning("Logout failed: {Status} {Body}", response.StatusCode, body);
+        }
     }
 }

@@ -1,0 +1,50 @@
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Routing
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager Nav
+
+
+@if (_allowed)
+{
+    <RouteView RouteData="RouteData" DefaultLayout="typeof(Layout.MainLayout)" />
+    <FocusOnNavigate RouteData="RouteData" Selector="h1" />
+}
+
+@code {
+    [Parameter]
+    public RouteData RouteData { get; set; }
+    private bool _allowed;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _allowed = false;
+        try
+        {
+            var authState = await AuthProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            var isAuthenticated = user?.Identity?.IsAuthenticated == true;
+
+            // allow the login page even when unauthenticated
+            var pageName = RouteData?.PageType?.Name;
+            if (!isAuthenticated && string.Equals(pageName, "Login", StringComparison.OrdinalIgnoreCase))
+            {
+                _allowed = true;
+                return;
+            }
+
+            if (!isAuthenticated)
+            {
+                // redirect unauthenticated users to access denied
+                Nav.NavigateTo("/accessdenied", forceLoad: false);
+                return;
+            }
+
+            _allowed = true;
+        }
+        catch
+        {
+            Nav.NavigateTo("/accessdenied", forceLoad: false);
+        }
+    }
+}

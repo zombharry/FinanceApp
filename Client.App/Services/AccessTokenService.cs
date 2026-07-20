@@ -3,6 +3,7 @@
     public class AccessTokenService
     {
         private readonly CookieService _cookieService;
+        // store the token under a consistent cookie name used by server-side handler
         private readonly string _tokenKey = "access_token";
         public AccessTokenService(CookieService cookieService)
         {

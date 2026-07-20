@@ -22,7 +22,7 @@ public class JwtAuthenticationStateProvider : AuthenticationStateProvider
 
             if (string.IsNullOrWhiteSpace(token))
             {
-                return await MarkAsAouthorized();
+                return await MarkAsUnAouthorized();
             }
             var readJwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
             var identity = new ClaimsIdentity(readJwt.Claims, "JWT");
@@ -34,11 +34,11 @@ public class JwtAuthenticationStateProvider : AuthenticationStateProvider
         catch (Exception)
         {
 
-            return await MarkAsAouthorized();
+            return await MarkAsUnAouthorized();
         }
     }
 
-    private async Task<AuthenticationState> MarkAsAouthorized()
+    private async Task<AuthenticationState> MarkAsUnAouthorized()
     {
         try
         {

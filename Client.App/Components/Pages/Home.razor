@@ -51,7 +51,8 @@
         if (user.Identity.IsAuthenticated)
         {
             Token = await AccessTokenService.GetAccessTokenAsync();
-            Username = user.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Name)?.Value;
+            var givenName = user.FindFirst("given_name")?.Value;
+            Username = givenName;
 
             var expires = user.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Exp).Value;
             if (long.TryParse(expires, out var exp))
