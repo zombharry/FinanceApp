@@ -65,7 +65,10 @@ public class AccountController : Controller
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
 
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+            {
                 return Redirect(model.ReturnUrl);
+            }
+
             return RedirectToAction("Index", "Home");
         }
         catch (SecurityTokenException)
