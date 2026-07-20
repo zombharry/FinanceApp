@@ -10,17 +10,20 @@ public class AuthService
 {
     private readonly AccessTokenService _accessTokenService; 
     private readonly ILogger<AuthService> _logger;
+    private readonly NavigationManager _navigationManager;
     private HttpClient _httpClient;
 
     private readonly string _tokenEndpoint;
 
     public AuthService(
         AccessTokenService accessTokenService,
+        NavigationManager navigationManager,
         ILogger<AuthService> logger,
         IConfiguration config,
         IHttpClientFactory httpClientFactory)
     {
         _accessTokenService = accessTokenService;
+        _navigationManager = navigationManager;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient("ApiClient");
         _tokenEndpoint = config["AuthApi:TokenEndpoint"] ?? "/api/Auth/login";
@@ -37,10 +40,12 @@ public class AuthService
             {
                 var body = await response.Content.ReadAsStringAsync();
                 _logger?.LogWarning("AuthApi login failed: {Status} {Body}", response.StatusCode, body);
+                _navigationManager.NavigateTo("/login");
             }
             catch (Exception ex)
             {
                 _logger?.LogWarning(ex, "AuthApi login failed and reading body threw");
+                _navigationManager.NavigateTo("/login");
             }
             return null;
         }
@@ -93,16 +98,18 @@ public class AuthService
         return (false, string.IsNullOrWhiteSpace(body) ? resp.ReasonPhrase : body);
     }
 
-    public async Task<(bool Success, string? Error)> LogOut()
+    public async Task LogOut(string username)
     {
-        var response = _httpClient.PostAsync("/api/auth/logout", null);
+        var content = new StringContent(JsonSerializer.Serialize(username), Encoding.UTF8, "application/json");
+        var response = await _httpClient.PostAsync("/api/auth/logout", content);
 
-        if (response.IsCompletedSuccessfully)
+        if (response.IsSuccessStatusCode)
         {
-            return (true, null);
+            await _accessTokenService.RemoveAccessTokenAsync();
+            _navigationManager.NavigateTo("/login", forceLoad: true);
         }
 
-        var body = await response.Result.Content.ReadAsStringAsync();
-        return (false, string.IsNullOrWhiteSpace(body) ? response.IsFaulted.ToString() : body);
+        //var body = await response.Result.Content.ReadAsStringAsync();
+        //return (false, string.IsNullOrWhiteSpace(body) ? response.IsFaulted.ToString() : body);
     }
 }
