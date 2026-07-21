@@ -92,6 +92,7 @@ public class AuthService
                 }
             }
         }
+        await _accessTokenService.RemoveAccessTokenAsync();
         await _accessTokenService.SetAccessTokenAsync(accessToken);
         await _refreshTokenService.SetAsync(refreshToken);
 
@@ -103,8 +104,9 @@ public class AuthService
     {
         var token = await _accessTokenService.GetAccessTokenAsync();
         if (string.IsNullOrWhiteSpace(token))
+        {
             return null;
-
+        }
         try
         {
             var handler = new JwtSecurityTokenHandler();
@@ -112,7 +114,7 @@ public class AuthService
 
             var userInfo = new DTO.UserInfo();
             // common claim types: name, unique_name, sub, email
-            userInfo.Username = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name || c.Type == "unique_name" || c.Type == "name" || c.Type == "sub")?.Value;
+            userInfo.Username = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name || c.Type == "given_name" || c.Type == "name" || c.Type == "sub")?.Value;
             userInfo.Email = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email || c.Type == "email")?.Value;
 
             foreach (var c in jwt.Claims)

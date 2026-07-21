@@ -1,5 +1,6 @@
-﻿using System.Net.Http.Headers;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
+using System.Net;
+using System.Net.Http.Headers;
 
 namespace Client.App.Services;
 
@@ -16,7 +17,7 @@ public class ApiService
         NavigationManager navigationManager
         )
     {
-        _httpClient = httpFactory.CreateClient("ApiClient"); 
+        _httpClient = httpFactory.CreateClient("ResourceClient"); 
         _tokenService = accessTokenService;
         _authService = authService;
         _navigationManager = navigationManager;
@@ -34,7 +35,9 @@ public class ApiService
             var refreshTokenResult = await _authService.RefreshTokenAsync();
             if (!refreshTokenResult)
             {
-                //await _authService.LogOut();
+                var userInfo = _authService.GetUserInfoAsync();
+
+                await _authService.LogOut(userInfo.Result.Username);
             }
 
             var newToken = await _tokenService.GetAccessTokenAsync();
@@ -47,7 +50,31 @@ public class ApiService
         return responseMessage;
     }
 
-    //public async Task<HttpResponseMessage> PostDataAsync(string ednpoint, object obj)
-    //{ 
-    //}
+    public async Task<HttpResponseMessage> PostDataAsync(string endpoint, object obj)
+    {
+        var token = await _tokenService.GetAccessTokenAsync();
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var responseMessage = await _httpClient.PostAsJsonAsync(endpoint, obj);
+
+        if (responseMessage.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+
+            var refreshTokenResult = await _authService.RefreshTokenAsync();
+            if (!refreshTokenResult)
+            {
+                var userInfo = _authService.GetUserInfoAsync();
+
+                await _authService.LogOut(userInfo.Result.Username);
+            }
+
+            var newToken = await _tokenService.GetAccessTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", newToken);
+
+            var newResponse = await _httpClient.GetAsync(endpoint);
+
+            return newResponse;
+        }
+        return responseMessage;
+
+    }
 }

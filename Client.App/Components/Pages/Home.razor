@@ -6,6 +6,7 @@
 @inject AccessTokenService AccessTokenService
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
+@inject ResourceService ResourceService
 
 <AuthorizeView>
 
@@ -33,15 +34,33 @@
 </table>
 
 </AuthorizeView>
+
+<button class="btn btn-success mt-2" @onclick="VerifyGetRequest">Verify</button>
+<h1 class="text-success mt-2">
+    @if (IsVerified == true)
+    {
+        <span>Success!</span>
+    }
+    else if (IsVerified == false)
+    {
+        <span>Failed!</span>
+    }
+</h1>
+
 @code {
     public string Username { get; set; }
     public string Token { get; set; }
     public DateTime TokenExpiresAt { get; set; }
     public DateTime CurrentTime { get; set; }
+    public bool IsVerified { get; set; }
+
+    private Timer timer;
 
     protected override async Task OnInitializedAsync()
     {
         await InitialValues();
+
+        timer = new Timer(UpdateClock, null, 0, 1000);
     }
 
     private async Task InitialValues()
@@ -70,6 +89,18 @@
     private async Task Logout()
     {
         await AuthService.LogOut(Username);
-        
+
+    }
+
+    private async Task VerifyGetRequest()
+    {
+        IsVerified = await ResourceService.Verify();
+        await InitialValues();
+    }
+
+    private void UpdateClock(object state)
+    {
+        CurrentTime = DateTime.UtcNow;
+        InvokeAsync(StateHasChanged);
     }
 }
