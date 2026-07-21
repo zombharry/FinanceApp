@@ -1,4 +1,5 @@
 ﻿using Client.App.DTO;
+using Client.App.Security;
 using Microsoft.AspNetCore.Components;
 using System.Text;
 using System.Text.Json;
@@ -12,6 +13,7 @@ public class AuthService
 {
     private readonly AccessTokenService _accessTokenService; 
     private readonly RefreshTokenService _refreshTokenService;
+    private readonly JwtAuthenticationStateProvider _authenticationStateProvider;
     private readonly ILogger<AuthService> _logger;
     private readonly NavigationManager _navigationManager;
     private HttpClient _httpClient;
@@ -21,6 +23,7 @@ public class AuthService
     public AuthService(
         AccessTokenService accessTokenService,
         RefreshTokenService refreshTokenService,
+        JwtAuthenticationStateProvider authenticationStateProvider,
         NavigationManager navigationManager,
         ILogger<AuthService> logger,
         IConfiguration config,
@@ -28,6 +31,7 @@ public class AuthService
     {
         _accessTokenService = accessTokenService;
         _refreshTokenService = refreshTokenService;
+        _authenticationStateProvider = authenticationStateProvider;
         _navigationManager = navigationManager;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient("ApiClient");
@@ -117,8 +121,9 @@ public class AuthService
 
             var userInfo = new DTO.UserInfo();
             // common claim types: name, unique_name, sub, email
-            userInfo.Username = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name || c.Type == "given_name" || c.Type == "name" || c.Type == "sub")?.Value;
-            userInfo.Email = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email || c.Type == "email")?.Value;
+            userInfo.UserId = Guid.Parse(jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub).Value);
+            userInfo.Username = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.GivenName || c.Type == "given_name" || c.Type == "name" )?.Value;
+            userInfo.Email = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email || c.Type == "email")?.Value;
 
             foreach (var c in jwt.Claims)
             {
@@ -166,6 +171,7 @@ public class AuthService
                 var result = JsonSerializer.Deserialize<AuthResponse>(token);
                 await _accessTokenService.SetAccessTokenAsync(result.AccessToken);
                 await _refreshTokenService.SetAsync(result.RefreshToken);
+
                 return true;
             }
         }
@@ -175,21 +181,35 @@ public class AuthService
     public async Task LogOut(string username)
     {
         var payload = new { username };
-        var refreshToken = await _refreshTokenService.GetAsync();
-        _httpClient.DefaultRequestHeaders.Add("Cookie", $"refreshtopken={refreshToken}");
-        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync("/api/auth/logout", content);
-
-        if (response.IsSuccessStatusCode)
+        try
         {
+            var refreshToken = await _refreshTokenService.GetAsync();
+            if (!string.IsNullOrEmpty(refreshToken))
+            {
+                _httpClient.DefaultRequestHeaders.Add("Cookie", $"refreshtopken={refreshToken}");
+            }
+            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("/api/auth/logout", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await _accessTokenService.RemoveAccessTokenAsync();
+                await _refreshTokenService.DeleteAsync();
+                _navigationManager.NavigateTo("/login", forceLoad: true);
+            }
+            else
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                _logger?.LogWarning("Logout failed: {Status} {Body}", response.StatusCode, body);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Logout exception: {Message}", ex.Message);
+            // Even if logout API fails, clear local tokens and redirect
             await _accessTokenService.RemoveAccessTokenAsync();
             await _refreshTokenService.DeleteAsync();
             _navigationManager.NavigateTo("/login", forceLoad: true);
-        }
-        else
-        {
-            var body = await response.Content.ReadAsStringAsync();
-            _logger?.LogWarning("Logout failed: {Status} {Body}", response.StatusCode, body);
         }
     }
 }

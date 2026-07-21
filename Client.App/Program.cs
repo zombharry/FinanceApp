@@ -2,6 +2,7 @@ using Client.App.Components;
 using Client.App.Security;
 using Client.App.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -27,6 +28,7 @@ var tokenValidationParameters = new TokenValidationParameters
 builder.Services.AddSingleton(tokenValidationParameters);
 
 builder.Services.AddScoped<CookieService>();
+builder.Services.AddScoped<BlazoredLocalStorageService>();
 builder.Services.AddScoped<AccessTokenService>();
 builder.Services.AddHttpClient("ApiClient", client =>
 {
@@ -72,5 +74,6 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
 
 app.Run();

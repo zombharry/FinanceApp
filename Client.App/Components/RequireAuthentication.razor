@@ -34,7 +34,8 @@
 
             if (!isAuthenticated)
             {
-                Nav.NavigateTo("/accessdenied", forceLoad: false);
+                Nav.NavigateTo("/login", forceLoad: false);
+                //TODO Toast Message
                 return;
             }
 
@@ -42,7 +43,9 @@
         }
         catch
         {
-            Nav.NavigateTo("/accessdenied", forceLoad: false);
+            Nav.NavigateTo("/login", forceLoad: false);
+
+            //TODO Toast message
         }
     }
 }

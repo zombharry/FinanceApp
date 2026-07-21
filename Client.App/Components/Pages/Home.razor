@@ -8,7 +8,6 @@
 @inject AuthService AuthService
 @inject ResourceService ResourceService
 
-<AuthorizeView>
 
 <PageTitle>Home</PageTitle>
 <h1> You are authorizer <button class="btn btn-primary" @onclick="Logout">Logout</button></h1>
@@ -33,7 +32,6 @@
 
 </table>
 
-</AuthorizeView>
 
 <button class="btn btn-success mt-2" @onclick="VerifyGetRequest">Verify</button>
 <h1 class="text-success mt-2">
@@ -55,12 +53,17 @@
     public bool IsVerified { get; set; }
 
     private Timer timer;
+    private bool _initialized = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await InitialValues();
-
-        timer = new Timer(UpdateClock, null, 0, 1000);
+        if (firstRender && !_initialized)
+        {
+            _initialized = true;
+            await InitialValues();
+            timer = new Timer(UpdateClock, null, 0, 1000);
+            StateHasChanged();
+        }
     }
 
     private async Task InitialValues()
@@ -100,7 +103,7 @@
 
     private void UpdateClock(object state)
     {
-        CurrentTime = DateTime.UtcNow;
+        CurrentTime = DateTime.Now;
         InvokeAsync(StateHasChanged);
     }
 }

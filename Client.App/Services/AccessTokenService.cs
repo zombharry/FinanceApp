@@ -2,27 +2,27 @@
 {
     public class AccessTokenService
     {
-        private readonly CookieService _cookieService;
-        // store the token under a consistent cookie name used by server-side handler
+        private readonly BlazoredLocalStorageService _storageService;
         private readonly string _tokenKey = "access_token";
-        public AccessTokenService(CookieService cookieService)
+
+        public AccessTokenService(BlazoredLocalStorageService storageService)
         {
-            _cookieService = cookieService;
+            _storageService = storageService;
         }
 
         public async Task<string> GetAccessTokenAsync()
         {
-            return await _cookieService.GetCookie(_tokenKey);
+            return await _storageService.GetAsync(_tokenKey);
         }
 
         public async Task SetAccessTokenAsync(string accessToken)
         {
-            await _cookieService.SetCookie(_tokenKey, accessToken, 7);
+            await _storageService.SetAsync(_tokenKey, accessToken);
         }
 
         public async Task RemoveAccessTokenAsync()
         {
-            await _cookieService.RemoveCookie(_tokenKey);
+            await _storageService.RemoveAsync(_tokenKey);
         }
     }
 }
