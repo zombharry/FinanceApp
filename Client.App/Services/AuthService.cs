@@ -92,7 +92,10 @@ public class AuthService
                 }
             }
         }
-        await _accessTokenService.RemoveAccessTokenAsync();
+        //if (string.IsNullOrEmpty(await _accessTokenService.GetAccessTokenAsync()))
+        //{
+        //    await _accessTokenService.RemoveAccessTokenAsync();
+        //}
         await _accessTokenService.SetAccessTokenAsync(accessToken);
         await _refreshTokenService.SetAsync(refreshToken);
 

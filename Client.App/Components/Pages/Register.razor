@@ -1,4 +1,4 @@
-﻿@page "/login"
+﻿@page "/register"
 @layout EmptyLayout
 
 @rendermode InteractiveServer
@@ -8,28 +8,22 @@
 
 <div class="container">
     <input type="text" @bind-value="Username" class="form-control" placeholder="Username" required autofocus />
+    <input type="email" @bind-value="Email" class="form-control" placeholder="Email" required autofocus />
     <input type="password" @bind-value="Password" class="form-control" placeholder="Password" required autofocus />
     <button class="btn btn-lg btn-primary btn-block w-100" @onclick="OnLogin">Sign in</button>
-
-    <button class="btn btn-lg btn-primary btn-block w-100" @onclick="RedirectToRegisterPage">Register a new account</button>
 </div>
 
 @code {
     public string Username { get; set; }
+    public string Email { get; set; }
     public string Password { get; set; }
 
     private async Task OnLogin()
     {
-        var status = await AuthService.LoginAsync(Username, Password);
-        if (!string.IsNullOrWhiteSpace(status))
+        var status = await AuthService.RegisterAsync(Username, Email, Password);
+        if (status.Success)
         {
-            nav.NavigateTo("/");
+            nav.NavigateTo("/login");
         }
     }
-
-    private async Task RedirectToRegisterPage()
-    {
-        nav.NavigateTo("/register");
-    }
-
 }

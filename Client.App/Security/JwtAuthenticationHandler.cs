@@ -49,7 +49,7 @@ public class JwtAuthenticationHandler : AuthenticationHandler<CustomOption>
 
     protected override Task HandleForbiddenAsync(AuthenticationProperties properties)
     {
-        Response.Redirect("/accessdenied");
+        Response.Redirect("/login");
         return Task.CompletedTask;
     }
 }

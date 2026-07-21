@@ -25,7 +25,6 @@
 
             var isAuthenticated = user?.Identity?.IsAuthenticated == true;
 
-            // allow the login page even when unauthenticated
             var pageName = RouteData?.PageType?.Name;
             if (!isAuthenticated && string.Equals(pageName, "Login", StringComparison.OrdinalIgnoreCase))
             {
@@ -35,7 +34,6 @@
 
             if (!isAuthenticated)
             {
-                // redirect unauthenticated users to access denied
                 Nav.NavigateTo("/accessdenied", forceLoad: false);
                 return;
             }
