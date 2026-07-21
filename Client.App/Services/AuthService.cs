@@ -11,6 +11,7 @@ namespace Client.App.Services;
 public class AuthService
 {
     private readonly AccessTokenService _accessTokenService; 
+    private readonly RefreshTokenService _refreshTokenService;
     private readonly ILogger<AuthService> _logger;
     private readonly NavigationManager _navigationManager;
     private HttpClient _httpClient;
@@ -19,16 +20,18 @@ public class AuthService
 
     public AuthService(
         AccessTokenService accessTokenService,
+        RefreshTokenService refreshTokenService,
         NavigationManager navigationManager,
         ILogger<AuthService> logger,
         IConfiguration config,
         IHttpClientFactory httpClientFactory)
     {
         _accessTokenService = accessTokenService;
+        _refreshTokenService = refreshTokenService;
         _navigationManager = navigationManager;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient("ApiClient");
-        _tokenEndpoint = config["AuthApi:TokenEndpoint"] ?? "/api/Auth/login";
+        _tokenEndpoint = config["AuthApi:TokenEndpoint"] ?? "/api/auth/login";
     }
 
     public async Task<string> LoginAsync(string username, string password)
@@ -52,6 +55,9 @@ public class AuthService
             return null;
         }
 
+        string accessToken = string.Empty;
+        string refreshToken = string.Empty;
+
         using var responseStream = await response.Content.ReadAsStreamAsync();
         var doc = await JsonDocument.ParseAsync(responseStream);
 
@@ -60,26 +66,37 @@ public class AuthService
             if (string.Equals(prop.Name, "accessToken", StringComparison.OrdinalIgnoreCase))
             {
                 if (prop.Value.ValueKind == JsonValueKind.String)
-                {
-                    await _accessTokenService.SetAccessTokenAsync(prop.Value.GetString());
-                    return prop.Value.GetString();
-                }
+                    accessToken = prop.Value.GetString();
 
                 if (prop.Value.ValueKind == JsonValueKind.Object)
                 {
                     foreach (var inner in prop.Value.EnumerateObject())
                     {
                         if (inner.Value.ValueKind == JsonValueKind.String)
-                        {
-                            await _accessTokenService.SetAccessTokenAsync(inner.Value.GetString());
-                            return inner.Value.GetString();
-                        }
+                            accessToken = inner.Value.GetString();
+                    }
+                }
+            }
+            if (string.Equals(prop.Name, "refreshToken", StringComparison.OrdinalIgnoreCase))
+            {
+                if (prop.Value.ValueKind == JsonValueKind.String)
+                    refreshToken = prop.Value.GetString();
+
+                if (prop.Value.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var inner in prop.Value.EnumerateObject())
+                    {
+                        if (inner.Value.ValueKind == JsonValueKind.String)
+                            refreshToken = inner.Value.GetString();
                     }
                 }
             }
         }
+        await _accessTokenService.SetAccessTokenAsync(accessToken);
+        await _refreshTokenService.SetAsync(refreshToken);
 
-        return null;
+        return accessToken;
+        //return inner.Value.GetString();
     }
 
     public async Task<DTO.UserInfo?> GetUserInfoAsync()
@@ -128,15 +145,40 @@ public class AuthService
         return (false, string.IsNullOrWhiteSpace(body) ? resp.ReasonPhrase : body);
     }
 
+    public async Task<bool> RefreshTokenAsync()
+    {
+        var refreshToken = await _refreshTokenService.GetAsync();
+        _httpClient.DefaultRequestHeaders.Add("Cookie", $"refreshtopken={refreshToken}");
+        var payload = new { refreshToken };
+        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+        var response = await _httpClient.PostAsync("/api/auth/refresh", content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var token = await response.Content.ReadAsStringAsync();
+            if (!string.IsNullOrEmpty(token))
+            {
+                var result = JsonSerializer.Deserialize<AuthResponse>(token);
+                await _accessTokenService.SetAccessTokenAsync(result.AccessToken);
+                await _refreshTokenService.SetAsync(result.RefreshToken);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public async Task LogOut(string username)
     {
         var payload = new { username };
+        var refreshToken = await _refreshTokenService.GetAsync();
+        _httpClient.DefaultRequestHeaders.Add("Cookie", $"refreshtopken={refreshToken}");
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         var response = await _httpClient.PostAsync("/api/auth/logout", content);
 
         if (response.IsSuccessStatusCode)
         {
             await _accessTokenService.RemoveAccessTokenAsync();
+            await _refreshTokenService.DeleteAsync();
             _navigationManager.NavigateTo("/login", forceLoad: true);
         }
         else

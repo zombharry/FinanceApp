@@ -42,6 +42,8 @@ builder.Services.AddAuthentication()
     );
 builder.Services.AddScoped<JwtAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
+builder.Services.AddScoped<RefreshTokenService>();
+builder.Services.AddScoped<ApiService>();
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 
