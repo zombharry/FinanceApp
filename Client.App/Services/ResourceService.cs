@@ -10,7 +10,7 @@
 
         public async Task<bool> Verify()
         {
-            var result = await _apiService.GetAsync("Resource/verify");
+            var result = await _apiService.GetAsync("api/Resource/verify");
             return result.IsSuccessStatusCode;
         }
     }

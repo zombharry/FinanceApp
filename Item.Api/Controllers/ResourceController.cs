@@ -7,7 +7,7 @@ namespace Item.Api.Controllers;
 [ApiController]
 public class ResourceController : ControllerBase
 {
-    [Authorize]
+    //[Authorize]
     [HttpGet]
     [Route("verify")]
     public IActionResult Verify()
