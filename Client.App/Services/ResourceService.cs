@@ -19,7 +19,6 @@ public class ResourceService
 
     public async Task<IEnumerable<ProductGetDTO>> GetUserItems(Guid userIdentifier)
     {
-        //var endpoint = $"api/Product/getuserproduct?userId={Uri.EscapeDataString(userIdentifier)}";
         var response = await _apiService.GetAsync($"api/product/getuserproduct?userId={userIdentifier}");
 
         if (!response.IsSuccessStatusCode)
@@ -71,7 +70,11 @@ public class ResourceService
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task DeleteItem(Guid itemIdentifier) { }
+    public async Task DeleteItem(Guid itemIdentifier)
+    {
+        var response = await _apiService.GetAsync($"api/product/delete?id={itemIdentifier}");
+        response.EnsureSuccessStatusCode();
+    }
 
     public async Task<IEnumerable<CategoryGetDTO>> GetCategories()
     {

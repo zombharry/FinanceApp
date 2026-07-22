@@ -35,7 +35,7 @@ public class ProductController : ControllerBase
         var productGet = await _productService.GetProductByIdAsync(productId);
         var productGetDto = new ProductGetDTO
         {
-            Id = productGet.Id.ToString(),
+            Id = productGet.Id,
             Name = productGet.Name,
             Description = productGet.Description,
             Price = productGet.Price,

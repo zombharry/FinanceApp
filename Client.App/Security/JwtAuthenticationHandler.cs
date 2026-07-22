@@ -36,7 +36,6 @@ public class JwtAuthenticationHandler : AuthenticationHandler<CustomOption>
         }
         catch (Exception)
         {
-
             return AuthenticateResult.NoResult();
         }
     }
