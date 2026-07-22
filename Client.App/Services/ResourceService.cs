@@ -17,20 +17,31 @@ public class ResourceService
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<IEnumerable<ProductGetDTO>> GetUserItems(string userId)
+    public async Task<IEnumerable<ProductGetDTO>> GetUserItems(Guid userIdentifier)
     {
-        var response = await _apiService.PostDataAsync("api/Product/GetUserProduct",userId);
+        //var endpoint = $"api/Product/getuserproduct?userId={Uri.EscapeDataString(userIdentifier)}";
+        var response = await _apiService.GetAsync($"api/product/getuserproduct?userId={userIdentifier}");
 
-        using var responseStream = await response.Content.ReadAsStreamAsync();
-        var doc = await JsonDocument.ParseAsync(responseStream);
+        if (!response.IsSuccessStatusCode)
+        {
+            return Enumerable.Empty<ProductGetDTO>();
+        }
 
-        var userItems = new List<ProductGetDTO>();
+        await using var responseStream = await response.Content.ReadAsStreamAsync();
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
 
-        return userItems;
+        var userItems = await JsonSerializer.DeserializeAsync<IEnumerable<ProductGetDTO>>(responseStream, options);
+
+        return userItems ?? Enumerable.Empty<ProductGetDTO>();
     }
 
-    public async Task CreateNewItem(ProductGetDTO item)
+    public async Task CreateNewItem(ProductCreateDto item)
     {
+        var response = await _apiService.PostDataAsync("api/Product/create", item);
 
+        response.EnsureSuccessStatusCode();
     }
 }

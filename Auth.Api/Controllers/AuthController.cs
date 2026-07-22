@@ -96,4 +96,17 @@ public class AuthController : ControllerBase
         var tokenPair = await _tokenService.RefreshAccessTokenAsync(refreshToken);
         return Ok(tokenPair);
     }
+
+    [HttpGet("getUserId")]
+    public async Task<IActionResult> GetUserId(string username)
+    {
+        var user = await _userManager.FindByNameAsync(username);
+
+        var response = new UserResponse
+        {
+            UserId = Guid.Parse(user.Id)
+        };
+
+        return Ok(response);
+    }
 }

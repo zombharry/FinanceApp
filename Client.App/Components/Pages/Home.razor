@@ -2,11 +2,11 @@
 
 @attribute [Authorize]
 @rendermode InteractiveServer
-@inject JwtAuthenticationStateProvider AuthStateProvider
-@inject AccessTokenService AccessTokenService
-@inject NavigationManager NavigationManager
-@inject AuthService AuthService
-@inject ResourceService ResourceService
+@inject JwtAuthenticationStateProvider _authStateProvider
+@inject AccessTokenService _accessTokenService
+@inject NavigationManager _navigationManager
+@inject AuthService _authService
+@inject ResourceService _resourceService
 
 
 <PageTitle>Home</PageTitle>
@@ -68,11 +68,11 @@
 
     private async Task InitialValues()
     {
-        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        var state = await _authStateProvider.GetAuthenticationStateAsync();
         var user = state.User;
         if (user.Identity.IsAuthenticated)
         {
-            Token = await AccessTokenService.GetAccessTokenAsync();
+            Token = await _accessTokenService.GetAccessTokenAsync();
             var givenName = user.FindFirst("given_name")?.Value;
             Username = givenName;
 
@@ -85,19 +85,18 @@
         }
         else
         {
-            NavigationManager.NavigateTo("/login");
+            _navigationManager.NavigateTo("/login");
         }
     }
 
     private async Task Logout()
     {
-        await AuthService.LogOut(Username);
-
+        await _authService.LogOut(Username);
     }
 
     private async Task VerifyGetRequest()
     {
-        IsVerified = await ResourceService.Verify();
+        IsVerified = await _resourceService.Verify();
         await InitialValues();
     }
 

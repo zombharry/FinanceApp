@@ -1,4 +1,7 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@inject JwtAuthenticationStateProvider _jwtAuthenticationStateProvider
+@implements IDisposable
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Client.App</a>
     </div>
@@ -25,6 +28,59 @@
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
             </NavLink>
         </div>
+        <div class="nav-item px-3">
+            @if (!string.IsNullOrWhiteSpace(Username))
+            {
+                <NavLink class="nav-link" href="@($"userItems/{Username}")">
+                    <span class="bi bi-person-circle-nav-menu" aria-hidden="true"></span> My Items
+                </NavLink>
+            }
+            else
+            {
+                <NavLink class="nav-link" href="login">
+                    <span class="bi bi-person-circle-nav-menu" aria-hidden="true"></span> My Items
+                </NavLink>
+            }
+        </div>
     </nav>
 </div>
 
+@code {
+    private string? Username;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SetUsernameAsync();
+        _jwtAuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
+    }
+
+    private async Task SetUsernameAsync()
+    {
+        var authState = await _jwtAuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user?.Identity?.IsAuthenticated == true)
+        {
+            Username =
+                user.Identity?.Name
+                ?? user.FindFirst("given_name")?.Value
+                ?? user.FindFirst(JwtRegisteredClaimNames.Name)?.Value;
+        }
+        else
+        {
+            Username = null;
+        }
+
+        StateHasChanged();
+    }
+    private void OnAuthenticationStateChanged(Task<AuthenticationState> task)
+    {
+        _ = InvokeAsync(async () => await SetUsernameAsync());
+    }
+
+    public void Dispose()
+    {
+        _jwtAuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
+    }
+
+}

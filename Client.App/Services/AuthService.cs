@@ -140,6 +140,42 @@ public class AuthService
         }
     }
 
+    public async Task<Guid> GetUserId(string username)
+    {
+        var response = await _httpClient.GetAsync($"api/auth/getUserId?username={username}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            try
+            {
+                var stream = await response.Content.ReadAsStreamAsync();
+                using var doc = await JsonDocument.ParseAsync(stream);
+                if (doc.RootElement.TryGetProperty("userId", out var idProp))
+                {
+                    if (idProp.ValueKind == JsonValueKind.String && Guid.TryParse(idProp.GetString(), out var guid))
+                    {
+                        return guid;
+                    }
+                    if (idProp.ValueKind == JsonValueKind.Null)
+                    {
+                        return Guid.Empty;
+                    }
+                }
+
+                if (doc.RootElement.ValueKind == JsonValueKind.String && Guid.TryParse(doc.RootElement.GetString(), out var rootGuid))
+                {
+                    return rootGuid;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "GetUserId: failed to parse response");
+            }
+        }
+
+        return Guid.Empty;
+    }
+
     public async Task<(bool Success, string? Error)> RegisterAsync(string username, string email, string password)
     {
         var payload = new { username, email, password };

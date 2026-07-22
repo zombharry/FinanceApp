@@ -1,10 +1,72 @@
-﻿@page "/myItems/{userid}"
+﻿@page "/userItems/{username}"
+@using System.Linq
+@inject AuthService _authService
+@inject ResourceService _resourceService
 
 @attribute [Authorize]
 @rendermode InteractiveServer
 
-<h3>UserItems</h3>
+<h3>User Items</h3>
+
+@if (ItemList == null)
+{
+    <p><em>Loading items...</em></p>
+}
+else if (!ItemList.Any())
+{
+    <p><em>No items found.</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th class="text-end">Price</th>
+                <th>Owner</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in ItemList)
+            {
+                <tr>
+                    <td>@item.Name</td>
+                    <td>@item.Description</td>
+                    <td>@item.CategoryId</td>
+                    <td class="text-end">@((item.Price.HasValue) ? item.Price.Value.ToString("C") : "-")</td>
+                    <td>@item.OwnerId</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 @code {
+    [Parameter]
+    public string username { get; set; }
 
+    public UserInfo User { get; set; }
+    public IEnumerable<ProductGetDTO> ItemList { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadItemsAsync();
+    }
+
+    private async Task LoadItemsAsync()
+    {
+        //User = await _authService.GetUserInfoAsync();
+        var userId = await _authService.GetUserId(username);
+
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            ItemList = await _resourceService.GetUserItems(userId);
+        }
+        else
+        {
+            ItemList = Enumerable.Empty<ProductGetDTO>();
+        }
+    }
 }
