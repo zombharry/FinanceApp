@@ -30,7 +30,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("getbyid")]
-    public async Task<IActionResult> GetProduct(string productId)
+    public async Task<IActionResult> GetProduct(Guid productId)
     {
         var productGet = await _productService.GetProductByIdAsync(productId);
         var productGetDto = new ProductGetDTO
@@ -78,7 +78,7 @@ public class ProductController : ControllerBase
         return Ok();
     }
     [HttpGet("delete")]
-    public async Task<ActionResult> DeleteProduct(string id)
+    public async Task<ActionResult> DeleteProduct(Guid id)
     {
         await _productService.DeleteProductAsync(id);
         return Ok();

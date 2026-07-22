@@ -19,9 +19,9 @@ namespace Item.Api.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteProductAsync(string id)
+        public async Task DeleteProductAsync(Guid id)
         {
-            await _context.Products.Where(p => p.Id.ToString().Equals(id)).ExecuteDeleteAsync();
+            await _context.Products.Where(p => p.Id == id).ExecuteDeleteAsync();
             await _context.SaveChangesAsync();
         }
 
@@ -49,9 +49,9 @@ namespace Item.Api.Services
             return products;
         }
 
-        public async Task<Product> GetProductByIdAsync(string id)
+        public async Task<Product> GetProductByIdAsync(Guid id)
         {
-            return await _context.Products.FirstOrDefaultAsync(p => p.Id.ToString().Equals(id));
+            return await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task<IEnumerable<Product>> GetUserProductAsync(string userId)

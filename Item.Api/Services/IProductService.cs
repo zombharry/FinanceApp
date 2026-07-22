@@ -8,12 +8,12 @@ namespace Item.Api.Services
 
         public Task<IEnumerable<Product>> GetUserProductAsync(string userId);
 
-        public Task<Product> GetProductByIdAsync(string id);
+        public Task<Product> GetProductByIdAsync(Guid id);
 
         public Task CreateProductAsync(Product product);
 
         public Task EditProductAsync(Product product);
 
-        public Task DeleteProductAsync(string id);
+        public Task DeleteProductAsync(Guid id);
     }
 }
