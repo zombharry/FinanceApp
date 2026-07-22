@@ -1,0 +1,89 @@
+@page "/editItem/{id}"
+@using Client.App.DTO.ItemDtos
+@inject ResourceService _resourceService
+@inject AuthService _authService
+@inject NavigationManager _navigationManager
+
+<h3>Edit Item</h3>
+
+@if (IsLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <EditForm Model="this" OnValidSubmit="SaveItem">
+        <InputText class="form-control mb-2" @bind-Value="ItemName" />
+        <InputText class="form-control mb-2" @bind-Value="ItemDescription" />
+        <InputNumber class="form-control mb-2" @bind-Value="Price" />
+
+        <select class="form-select mb-2" @bind="SelectedCategoryId">
+            @foreach (var category in Categories)
+            {
+                <option value="@category.CategoryId">@category.CategoryName</option>
+            }
+        </select>
+
+        <button class="btn btn-primary">Save</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public string id { get; set; }
+
+    public string ItemName { get; set; }
+    public string ItemDescription { get; set; }
+    public double? Price { get; set; }
+    public IEnumerable<CategoryGetDTO> Categories { get; set; } = new List<CategoryGetDTO>();
+    public Guid SelectedCategoryId { get; set; }
+    public string OwnerId { get; set; }
+    public bool IsLoading { get; set; } = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Categories = await _resourceService.GetCategories();
+
+        if (Guid.TryParse(id, out var guid))
+        {
+            var product = await _resourceService.GetProductById(guid);
+            if (product != null)
+            {
+                ItemName = product.Name;
+                ItemDescription = product.Description;
+                Price = product.Price;
+                SelectedCategoryId = product.CategoryId;
+                OwnerId = product.OwnerId;
+            }
+        }
+
+        IsLoading = false;
+    }
+
+    private async Task SaveItem()
+    {
+        var editDto = new ProductEditDTO
+        {
+            Id = id,
+            Name = ItemName,
+            Description = ItemDescription,
+            Price = Price,
+            CategoryId = SelectedCategoryId,
+            OwnerId = OwnerId
+        };
+
+        await _resourceService.EditProduct(editDto);
+
+        var user = await _authService.GetUserInfoAsync();
+        if (user != null)
+        {
+            _navigationManager.NavigateTo($"/userItems/{user.Username}");
+        }
+        else
+        {
+            _navigationManager.NavigateTo("/");
+        }
+    }
+
+    // no helpers
+}

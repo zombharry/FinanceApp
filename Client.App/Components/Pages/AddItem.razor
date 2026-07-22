@@ -1,0 +1,61 @@
+﻿@page "/addItem"
+@inject ResourceService _resourceService
+@inject AuthService _authService
+@inject NavigationManager _navigationManager
+
+<h3>Add Item</h3>
+
+<EditForm Model="this" OnValidSubmit="CreateItem">
+    <InputText class="form-control mb-2" @bind-Value="ItemName" placeholder="Item name" />
+    <InputText class="form-control mb-2" @bind-Value="ItemDescription" placeholder="Item description" />
+    <InputNumber class="form-control mb-2" @bind-Value="Price" />
+
+    <select class="form-select mb-2" @bind="SelectedCategoryId">
+        <option value="">-- select category --</option>
+        @foreach (var category in Categories)
+        {
+            <option value="@category.CategoryId">@category.CategoryName</option>
+        }
+    </select>
+
+    <button class="btn btn-primary">Create</button>
+</EditForm>
+
+@code {
+    public string ItemName { get; set; }
+    public string ItemDescription { get; set; }
+    public double? Price { get; set; }
+    public IEnumerable<CategoryGetDTO> Categories { get; set; } = new List<CategoryGetDTO>();
+    public Guid SelectedCategoryId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Categories = await _resourceService.GetCategories();
+    }
+
+    private async Task CreateItem()
+    {
+        var user = await _authService.GetUserInfoAsync();
+
+        var createDto = new ProductCreateDto
+        {
+            Name = ItemName,
+            Description = ItemDescription,
+            Price = Price,
+            CategoryId = SelectedCategoryId,
+            OwnerId = user?.UserId.ToString()
+        };
+
+        await _resourceService.CreateNewItem(createDto);
+
+        if (user != null)
+        {
+            _navigationManager.NavigateTo($"/userItems/{user.Username}");
+        }
+        else
+        {
+            _navigationManager.NavigateTo("/");
+        }
+    }
+
+}

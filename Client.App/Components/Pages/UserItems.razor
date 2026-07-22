@@ -34,9 +34,9 @@ else
                 <tr>
                     <td>@item.Name</td>
                     <td>@item.Description</td>
-                    <td>@item.CategoryId</td>
+                    <td>@GetCategoryName(item.CategoryId)</td>
                     <td class="text-end">@((item.Price.HasValue) ? item.Price.Value.ToString("C") : "-")</td>
-                    <td>@item.OwnerId</td>
+                    <td>@username</td>
                 </tr>
             }
         </tbody>
@@ -48,7 +48,9 @@ else
     public string username { get; set; }
 
     public UserInfo User { get; set; }
-    public IEnumerable<ProductGetDTO> ItemList { get; set; }
+    public IEnumerable<ProductGetDTO> ItemList { get; set; } = Enumerable.Empty<ProductGetDTO>();
+    public IEnumerable<CategoryGetDTO> Categories { get; set; } = Enumerable.Empty<CategoryGetDTO>();
+    private Dictionary<string, string> CategoryMap { get; set; } = new Dictionary<string, string>();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -57,16 +59,27 @@ else
 
     private async Task LoadItemsAsync()
     {
-        //User = await _authService.GetUserInfoAsync();
-        var userId = await _authService.GetUserId(username);
-
         if (!string.IsNullOrWhiteSpace(username))
         {
+            var userId = await _authService.GetUserId(username);
+
+            // load categories first so we can translate ids to names
+            Categories = await _resourceService.GetCategories();
+            CategoryMap = Categories.ToDictionary(c => c.CategoryId.ToString(), c => c.CategoryName);
+
             ItemList = await _resourceService.GetUserItems(userId);
         }
         else
         {
             ItemList = Enumerable.Empty<ProductGetDTO>();
         }
+    }
+
+    private string GetCategoryName(Guid categoryId)
+    {
+        var key = categoryId.ToString();
+        if (CategoryMap != null && CategoryMap.TryGetValue(key, out var name))
+            return name;
+        return categoryId.ToString();
     }
 }
