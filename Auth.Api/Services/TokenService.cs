@@ -26,9 +26,9 @@ public class TokenService : ITokenService
     {
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.GivenName, user.UserName),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email)
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.GivenName, user.UserName),
+            new Claim(ClaimTypes.Email, user.Email)
         };
 
         var jwt = _cfg.GetSection("Jwt");
@@ -122,6 +122,4 @@ public class TokenService : ITokenService
                 SameSite = SameSiteMode.None
             });
     }
-
-
 }

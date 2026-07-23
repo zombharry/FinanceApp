@@ -43,7 +43,12 @@ builder.Services
     .AddDefaultTokenProviders();
 
 builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters =
@@ -71,10 +76,14 @@ builder.Services
             OnMessageReceived = ctx =>
             {
                 ctx.Request.Cookies.TryGetValue("accessToken", out var accessToken);
-                if (string.IsNullOrEmpty(accessToken))
+                if (!string.IsNullOrEmpty(accessToken))
                 {
                     ctx.Token = accessToken;
                 }
+                return Task.CompletedTask;
+            },
+            OnChallenge = ctx =>
+            {
                 return Task.CompletedTask;
             }
         };

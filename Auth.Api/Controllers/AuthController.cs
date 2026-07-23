@@ -125,8 +125,8 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Me()
     {
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-        var userName = User.FindFirstValue(JwtRegisteredClaimNames.GivenName);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userName = User.FindFirstValue(ClaimTypes.GivenName);
 
         if (userId is null)
         {
