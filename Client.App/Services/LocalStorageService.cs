@@ -1,13 +1,17 @@
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
+
 namespace Client.App.Services;
 
-public class BlazoredLocalStorageService
+public class LocalStorageService
 {
     private readonly ProtectedLocalStorage _protectedLocalStorage;
-    private readonly ILogger<BlazoredLocalStorageService> _logger;
+    private readonly ILogger<LocalStorageService> _logger;
 
-    public BlazoredLocalStorageService(ProtectedLocalStorage protectedLocalStorage, ILogger<BlazoredLocalStorageService> logger)
+    private const string AccessTokenKey = "access_token";
+    private const string RefreshTokenKey = "refresh_token";
+
+    public LocalStorageService(ProtectedLocalStorage protectedLocalStorage, ILogger<LocalStorageService> logger)
     {
         _protectedLocalStorage = protectedLocalStorage;
         _logger = logger;

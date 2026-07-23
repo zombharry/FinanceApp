@@ -2,10 +2,10 @@
 {
     public class AccessTokenService
     {
-        private readonly BlazoredLocalStorageService _storageService;
+        private readonly LocalStorageService _storageService;
         private readonly string _tokenKey = "access_token";
 
-        public AccessTokenService(BlazoredLocalStorageService storageService)
+        public AccessTokenService(LocalStorageService storageService)
         {
             _storageService = storageService;
         }

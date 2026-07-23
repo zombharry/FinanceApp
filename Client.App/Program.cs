@@ -28,7 +28,7 @@ var tokenValidationParameters = new TokenValidationParameters
 builder.Services.AddSingleton(tokenValidationParameters);
 
 builder.Services.AddScoped<CookieService>();
-builder.Services.AddScoped<BlazoredLocalStorageService>();
+builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddScoped<AccessTokenService>();
 builder.Services.AddHttpClient("ApiClient", client =>
 {
