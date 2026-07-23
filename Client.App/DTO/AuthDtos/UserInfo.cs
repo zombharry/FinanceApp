@@ -1,4 +1,4 @@
-namespace Client.App.DTO;
+namespace Client.App.DTO.AuthDtos;
 
 public class UserInfo
 {

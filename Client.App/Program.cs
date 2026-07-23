@@ -1,6 +1,7 @@
 using Client.App.Components;
 using Client.App.Security;
 using Client.App.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.IdentityModel.Tokens;
@@ -27,7 +28,7 @@ var tokenValidationParameters = new TokenValidationParameters
 
 builder.Services.AddSingleton(tokenValidationParameters);
 
-builder.Services.AddScoped<CookieService>();
+//builder.Services.AddScoped<CookieService>();
 builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddScoped<AccessTokenService>();
 builder.Services.AddHttpClient("ApiClient", client =>
@@ -40,15 +41,28 @@ builder.Services.AddHttpClient("ResourceClient", client =>
     client.BaseAddress = new Uri(builder.Configuration["ResourceApi:BaseUrl"]);
 });
 
+builder.Services.AddScoped(sp =>
+{
+    var handler = new HttpClientHandler
+    {
+        UseCookies = true,
+        AllowAutoRedirect = false
+    };
+    return new HttpClient(handler)
+    {
+        BaseAddress = new Uri(builder.Configuration["AuthApi:BaseUrl"])
+    };
+});
 
 builder.Services.AddScoped<AuthService>();
 
 builder.Services.AddAuthentication()
     .AddScheme<CustomOption, JwtAuthenticationHandler>(
-    "JwtAuth", options => { }
+    "JwtAuth", options => {}
     );
-builder.Services.AddScoped<JwtAuthenticationStateProvider>();
-builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
+
+builder.Services.AddScoped<CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<ApiService>();
 builder.Services.AddScoped<ResourceService>();

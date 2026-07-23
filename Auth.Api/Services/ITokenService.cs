@@ -13,4 +13,6 @@ public interface ITokenService
 
     Task RevokeRefreshTokenAsync(string userId);
 
+    void SetTokenInsideCookie(TokenPair tokens, HttpContext context);
+
 }

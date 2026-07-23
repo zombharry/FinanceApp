@@ -29,7 +29,7 @@ public class ApiService
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var responseMessage = await _httpClient.GetAsync(endpoint);
 
-        if (responseMessage.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        if (responseMessage.StatusCode == HttpStatusCode.Unauthorized)
         {
 
             var refreshTokenResult = await _authService.RefreshTokenAsync();
@@ -37,7 +37,7 @@ public class ApiService
             {
                 var userInfo = _authService.GetUserInfoAsync();
 
-                await _authService.LogOut(userInfo.Result.Username);
+                await _authService.LogoutAsync(userInfo.Result.Username);
             }
 
             var newToken = await _tokenService.GetAccessTokenAsync();
@@ -64,7 +64,7 @@ public class ApiService
             {
                 var userInfo = _authService.GetUserInfoAsync();
 
-                await _authService.LogOut(userInfo.Result.Username);
+                await _authService.LogoutAsync(userInfo.Result.Username);
             }
 
             var newToken = await _tokenService.GetAccessTokenAsync();

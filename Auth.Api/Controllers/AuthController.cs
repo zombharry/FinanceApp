@@ -4,6 +4,8 @@ using Auth.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace Auth.Api.Controllers;
 
@@ -74,7 +76,11 @@ public class AuthController : ControllerBase
 
         var accesToken = await _tokenService.CreateAccessTokenAsync(user);
         var refreshToken = await _tokenService.CreateRefreshTokenAsync(user.Id);
-        return Ok(new TokenPair(accesToken,refreshToken.Token));
+        var tokenPair = new TokenPair(accesToken, refreshToken.Token);
+
+        _tokenService.SetTokenInsideCookie(tokenPair, HttpContext);
+
+        return Ok(tokenPair);
     }
 
     [HttpPost("logout")]
@@ -91,10 +97,15 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh(string refreshToken)
+    public async Task<IActionResult> Refresh()
     {
+        HttpContext.Request.Cookies.TryGetValue("accessToken", out var accesToken);
+        HttpContext.Request.Cookies.TryGetValue("refreshToken", out var refreshToken);
+
         var tokenPair = await _tokenService.RefreshAccessTokenAsync(refreshToken);
-        return Ok(tokenPair);
+        _tokenService.SetTokenInsideCookie(tokenPair, HttpContext);
+
+        return Ok();
     }
 
     [HttpGet("getUserId")]
@@ -108,5 +119,24 @@ public class AuthController : ControllerBase
         };
 
         return Ok(response);
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> Me()
+    {
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var userName = User.FindFirstValue(JwtRegisteredClaimNames.GivenName);
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(new UserResponse
+        {
+            UserId = Guid.Parse(userId),
+            UserName = userName
+        });
     }
 }

@@ -2,34 +2,24 @@
 
 @attribute [Authorize]
 @rendermode InteractiveServer
-@inject JwtAuthenticationStateProvider _authStateProvider
-@inject AccessTokenService _accessTokenService
+@inject CustomAuthenticationStateProvider _authStateProvider
 @inject NavigationManager _navigationManager
 @inject AuthService _authService
 @inject ResourceService _resourceService
 
 
 <PageTitle>Home</PageTitle>
-<h1> You are authorizer <button class="btn btn-primary" @onclick="Logout">Logout</button></h1>
+<h1> You are authorized <button class="btn btn-primary" @onclick="Logout">Logout</button></h1>
 
 <table>
     <tr>
         <td>Username</td>
         <td>@Username</td>
     </tr>
-        <tr>
-            <td>Token</td>
-            <td>@Token</td>
-        </tr>
-        <tr>
-            <td>Token Expires At</td>
-            <td>@TokenExpiresAt</td>
-        </tr>
-        <tr>
-            <td>Current Time</td>
-            <td>@CurrentTime</td>
-        </tr>
-
+    <tr>
+        <td>Current Time</td>
+        <td>@CurrentTime</td>
+    </tr>
 </table>
 
 
@@ -70,20 +60,7 @@
     {
         var state = await _authStateProvider.GetAuthenticationStateAsync();
         var user = state.User;
-        if (user.Identity.IsAuthenticated)
-        {
-            Token = await _accessTokenService.GetAccessTokenAsync();
-            var givenName = user.FindFirst("given_name")?.Value;
-            Username = givenName;
-
-            var expires = user.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Exp).Value;
-            if (long.TryParse(expires, out var exp))
-            {
-                TokenExpiresAt = DateTimeOffset.FromUnixTimeSeconds(exp).LocalDateTime;
-            }
-
-        }
-        else
+        if (!user.Identity.IsAuthenticated)
         {
             _navigationManager.NavigateTo("/login");
         }
@@ -91,7 +68,7 @@
 
     private async Task Logout()
     {
-        await _authService.LogOut(Username);
+        await _authService.LogoutAsync(Username);
     }
 
     private async Task VerifyGetRequest()

@@ -99,4 +99,29 @@ public class TokenService : ITokenService
         }
         await _dbContext.SaveChangesAsync();
     }
+
+    public void SetTokenInsideCookie(TokenPair tokens, HttpContext context)
+    {
+        context.Response.Cookies.Append("accessToken", tokens.AccessToken,
+            new CookieOptions
+            {
+                Expires = DateTimeOffset.UtcNow.AddMinutes(10),
+                HttpOnly = true,
+                IsEssential = true,
+                Secure = true,
+                SameSite = SameSiteMode.None
+            });
+
+        context.Response.Cookies.Append("refreshToken", tokens.RefreshToken,
+            new CookieOptions
+            {
+                Expires = DateTimeOffset.UtcNow.AddHours(8),
+                HttpOnly = true,
+                IsEssential = true,
+                Secure = true,
+                SameSite = SameSiteMode.None
+            });
+    }
+
+
 }

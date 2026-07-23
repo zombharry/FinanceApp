@@ -1,11 +1,8 @@
-﻿using Client.App.DTO;
+﻿using Client.App.DTO.AuthDtos;
 using Client.App.Security;
 using Microsoft.AspNetCore.Components;
 using System.Text;
 using System.Text.Json;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using static System.Net.WebRequestMethods;
 
 namespace Client.App.Services;
 
@@ -13,7 +10,7 @@ public class AuthService
 {
     private readonly AccessTokenService _accessTokenService; 
     private readonly RefreshTokenService _refreshTokenService;
-    private readonly JwtAuthenticationStateProvider _authenticationStateProvider;
+    private readonly CustomAuthenticationStateProvider _authenticationStateProvider;
     private readonly ILogger<AuthService> _logger;
     private readonly NavigationManager _navigationManager;
     private HttpClient _httpClient;
@@ -23,7 +20,7 @@ public class AuthService
     public AuthService(
         AccessTokenService accessTokenService,
         RefreshTokenService refreshTokenService,
-        JwtAuthenticationStateProvider authenticationStateProvider,
+        CustomAuthenticationStateProvider authenticationStateProvider,
         NavigationManager navigationManager,
         ILogger<AuthService> logger,
         IConfiguration config,
@@ -38,104 +35,32 @@ public class AuthService
         _tokenEndpoint = config["AuthApi:TokenEndpoint"] ?? "/api/auth/login";
     }
 
-    public async Task<string> LoginAsync(string username, string password)
+    public async Task<(bool Success, string? Error)> LoginAsync(string username, string password)
     {
         var payload = new { username, password };
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         var response = await _httpClient.PostAsync(_tokenEndpoint, content);
         if (!response.IsSuccessStatusCode)
         {
-            try
-            {
-                var body = await response.Content.ReadAsStringAsync();
-                _logger?.LogWarning("AuthApi login failed: {Status} {Body}", response.StatusCode, body);
-                _navigationManager.NavigateTo("/login");
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogWarning(ex, "AuthApi login failed and reading body threw");
-                _navigationManager.NavigateTo("/login");
-            }
-            return null;
+            var error = await response.Content.ReadAsStringAsync();
+            return(false, error);
         }
 
-        string accessToken = string.Empty;
-        string refreshToken = string.Empty;
+        await _authenticationStateProvider.NotifyAuthenticationStateChangedAsync();
 
-        using var responseStream = await response.Content.ReadAsStreamAsync();
-        var doc = await JsonDocument.ParseAsync(responseStream);
-
-        foreach (var prop in doc.RootElement.EnumerateObject())
-        {
-            if (string.Equals(prop.Name, "accessToken", StringComparison.OrdinalIgnoreCase))
-            {
-                if (prop.Value.ValueKind == JsonValueKind.String)
-                    accessToken = prop.Value.GetString();
-
-                if (prop.Value.ValueKind == JsonValueKind.Object)
-                {
-                    foreach (var inner in prop.Value.EnumerateObject())
-                    {
-                        if (inner.Value.ValueKind == JsonValueKind.String)
-                            accessToken = inner.Value.GetString();
-                    }
-                }
-            }
-            if (string.Equals(prop.Name, "refreshToken", StringComparison.OrdinalIgnoreCase))
-            {
-                if (prop.Value.ValueKind == JsonValueKind.String)
-                    refreshToken = prop.Value.GetString();
-
-                if (prop.Value.ValueKind == JsonValueKind.Object)
-                {
-                    foreach (var inner in prop.Value.EnumerateObject())
-                    {
-                        if (inner.Value.ValueKind == JsonValueKind.String)
-                            refreshToken = inner.Value.GetString();
-                    }
-                }
-            }
-        }
-        //if (string.IsNullOrEmpty(await _accessTokenService.GetAccessTokenAsync()))
-        //{
-        //    await _accessTokenService.RemoveAccessTokenAsync();
-        //}
-        await _accessTokenService.SetAccessTokenAsync(accessToken);
-        await _refreshTokenService.SetAsync(refreshToken);
-
-        return accessToken;
-        //return inner.Value.GetString();
+        return (true,null);
+        
     }
 
-    public async Task<DTO.UserInfo?> GetUserInfoAsync()
+    public async Task<UserInfo?> GetUserInfoAsync()
     {
-        var token = await _accessTokenService.GetAccessTokenAsync();
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            return null;
-        }
         try
         {
-            var handler = new JwtSecurityTokenHandler();
-            var jwt = handler.ReadJwtToken(token);
-
-            var userInfo = new DTO.UserInfo();
-            // common claim types: name, unique_name, sub, email
-            userInfo.UserId = Guid.Parse(jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub).Value);
-            userInfo.Username = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.GivenName || c.Type == "given_name" || c.Type == "name" )?.Value;
-            userInfo.Email = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email || c.Type == "email")?.Value;
-
-            foreach (var c in jwt.Claims)
-            {
-                if (!userInfo.Claims.ContainsKey(c.Type))
-                    userInfo.Claims[c.Type] = c.Value;
-            }
-
-            return userInfo;
+            return await _httpClient.GetFromJsonAsync<UserInfo>("api/auth/me");
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "GetUserInfo: failed to read token");
+            _logger?.LogWarning(ex, "GetUserInfo: failed to get user informations");
             return null;
         }
     }
@@ -182,19 +107,19 @@ public class AuthService
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         var resp = await _httpClient.PostAsync("/api/auth/register", content);
 
-        if (resp.IsSuccessStatusCode)
+        if (!resp.IsSuccessStatusCode)
         {
-            return (true, null);
+            var error = await resp.Content.ReadAsStringAsync();
+            return (false, error);
         }
 
-        var body = await resp.Content.ReadAsStringAsync();
-        return (false, string.IsNullOrWhiteSpace(body) ? resp.ReasonPhrase : body);
+        return (true, null);
     }
 
     public async Task<bool> RefreshTokenAsync()
     {
         var refreshToken = await _refreshTokenService.GetAsync();
-        _httpClient.DefaultRequestHeaders.Add("Cookie", $"refreshtopken={refreshToken}");
+        _httpClient.DefaultRequestHeaders.Add("Cookie", $"refreshtoken={refreshToken}");
         var payload = new { refreshToken };
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         var response = await _httpClient.PostAsync("/api/auth/refresh", content);
@@ -214,38 +139,12 @@ public class AuthService
         return false;
     }
 
-    public async Task LogOut(string username)
+    public async Task LogoutAsync(string username)
     {
         var payload = new { username };
-        try
-        {
-            var refreshToken = await _refreshTokenService.GetAsync();
-            if (!string.IsNullOrEmpty(refreshToken))
-            {
-                _httpClient.DefaultRequestHeaders.Add("Cookie", $"refreshtopken={refreshToken}");
-            }
-            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync("/api/auth/logout", content);
+        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+        await _httpClient.PostAsync("api/auth/logout", content);
 
-            if (response.IsSuccessStatusCode)
-            {
-                await _accessTokenService.RemoveAccessTokenAsync();
-                await _refreshTokenService.DeleteAsync();
-                _navigationManager.NavigateTo("/login", forceLoad: true);
-            }
-            else
-            {
-                var body = await response.Content.ReadAsStringAsync();
-                _logger?.LogWarning("Logout failed: {Status} {Body}", response.StatusCode, body);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogError(ex, "Logout exception: {Message}", ex.Message);
-            // Even if logout API fails, clear local tokens and redirect
-            await _accessTokenService.RemoveAccessTokenAsync();
-            await _refreshTokenService.DeleteAsync();
-            _navigationManager.NavigateTo("/login", forceLoad: true);
-        }
+        await _authenticationStateProvider.NotifyUserLoggedOut();
     }
 }
