@@ -1,9 +1,11 @@
 ﻿using Client.App.DTO.AuthDtos;
+using Client.App.DTO.ItemDtos;
 using Client.App.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Client.App.Security;
 
@@ -22,21 +24,28 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        //var response = await _httpClient.GetFromJsonAsync<UserInfo>("api/auth/me");
-        
+        var response = await _httpClient.GetAsync("api/auth/me");
 
-        var userInfo = new UserInfo();
-
-        if (userInfo is null)
+        if (!response.IsSuccessStatusCode)
         {
             _currentState = Anonymous();
             return _currentState;
         }
+
+        await using var responseStream = await response.Content.ReadAsStreamAsync();
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        var userInfo = await JsonSerializer.DeserializeAsync<UserInfo>(responseStream, options);
+
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, userInfo.UserId.ToString()),
-            new Claim(JwtRegisteredClaimNames.GivenName, userInfo.Username)
+            new Claim(ClaimTypes.NameIdentifier, userInfo.UserId.ToString()),
+            new Claim(ClaimTypes.GivenName, userInfo.Username)
         };
+
         var identity = new ClaimsIdentity(claims, "cookie");
         _currentState = new AuthenticationState(new ClaimsPrincipal(identity));
         return _currentState;

@@ -136,7 +136,7 @@ public class AuthController : ControllerBase
         return Ok(new UserResponse
         {
             UserId = Guid.Parse(userId),
-            UserName = userName
+            Username = userName
         });
     }
 }

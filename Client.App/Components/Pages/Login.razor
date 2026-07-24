@@ -21,7 +21,7 @@
     private async Task OnLogin()
     {
         var status = await AuthService.LoginAsync(Username, Password);
-        if (!status.Success)
+        if (status.Success)
         {
             nav.NavigateTo("/");
         }

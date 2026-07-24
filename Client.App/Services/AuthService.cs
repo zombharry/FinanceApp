@@ -8,8 +8,6 @@ namespace Client.App.Services;
 
 public class AuthService
 {
-    private readonly AccessTokenService _accessTokenService; 
-    private readonly RefreshTokenService _refreshTokenService;
     private readonly CustomAuthenticationStateProvider _authenticationStateProvider;
     private readonly ILogger<AuthService> _logger;
     private readonly NavigationManager _navigationManager;
@@ -18,16 +16,12 @@ public class AuthService
     private readonly string _tokenEndpoint;
 
     public AuthService(
-        AccessTokenService accessTokenService,
-        RefreshTokenService refreshTokenService,
         CustomAuthenticationStateProvider authenticationStateProvider,
         NavigationManager navigationManager,
         ILogger<AuthService> logger,
         IConfiguration config,
         IHttpClientFactory httpClientFactory)
     {
-        _accessTokenService = accessTokenService;
-        _refreshTokenService = refreshTokenService;
         _authenticationStateProvider = authenticationStateProvider;
         _navigationManager = navigationManager;
         _logger = logger;
@@ -116,28 +110,28 @@ public class AuthService
         return (true, null);
     }
 
-    public async Task<bool> RefreshTokenAsync()
-    {
-        var refreshToken = await _refreshTokenService.GetAsync();
-        _httpClient.DefaultRequestHeaders.Add("Cookie", $"refreshtoken={refreshToken}");
-        var payload = new { refreshToken };
-        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync("/api/auth/refresh", content);
+    //public async Task<bool> RefreshTokenAsync()
+    //{
+    //    var refreshToken = await _refreshTokenService.GetAsync();
+    //    _httpClient.DefaultRequestHeaders.Add("Cookie", $"refreshtoken={refreshToken}");
+    //    var payload = new { refreshToken };
+    //    var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+    //    var response = await _httpClient.PostAsync("/api/auth/refresh", content);
 
-        if (response.IsSuccessStatusCode)
-        {
-            var token = await response.Content.ReadAsStringAsync();
-            if (!string.IsNullOrEmpty(token))
-            {
-                var result = JsonSerializer.Deserialize<AuthResponse>(token);
-                await _accessTokenService.SetAccessTokenAsync(result.AccessToken);
-                await _refreshTokenService.SetAsync(result.RefreshToken);
+    //    if (response.IsSuccessStatusCode)
+    //    {
+    //        var token = await response.Content.ReadAsStringAsync();
+    //        if (!string.IsNullOrEmpty(token))
+    //        {
+    //            var result = JsonSerializer.Deserialize<AuthResponse>(token);
+    //            await _accessTokenService.SetAccessTokenAsync(result.AccessToken);
+    //            await _refreshTokenService.SetAsync(result.RefreshToken);
 
-                return true;
-            }
-        }
-        return false;
-    }
+    //            return true;
+    //        }
+    //    }
+    //    return false;
+    //}
 
     public async Task LogoutAsync(string username)
     {

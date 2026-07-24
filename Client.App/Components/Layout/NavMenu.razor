@@ -64,7 +64,7 @@
             Username =
                 user.Identity?.Name
                 ?? user.FindFirst("given_name")?.Value
-                ?? user.FindFirst(JwtRegisteredClaimNames.Name)?.Value;
+                ?? user.FindFirst(ClaimTypes.GivenName)?.Value;
         }
         else
         {

@@ -19,7 +19,9 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (_hasChecked)
+        {
             return;
+        }
 
         _hasChecked = true;
 

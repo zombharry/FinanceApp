@@ -32,13 +32,13 @@ public class ApiService
         if (responseMessage.StatusCode == HttpStatusCode.Unauthorized)
         {
 
-            var refreshTokenResult = await _authService.RefreshTokenAsync();
-            if (!refreshTokenResult)
-            {
-                var userInfo = _authService.GetUserInfoAsync();
+            //var refreshTokenResult = await _authService.RefreshTokenAsync();
+            //if (!refreshTokenResult)
+            //{
+            //    var userInfo = _authService.GetUserInfoAsync();
 
-                await _authService.LogoutAsync(userInfo.Result.Username);
-            }
+            //    await _authService.LogoutAsync(userInfo.Result.Username);
+            //}
 
             var newToken = await _tokenService.GetAccessTokenAsync();
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", newToken);
@@ -59,13 +59,13 @@ public class ApiService
         if (responseMessage.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
 
-            var refreshTokenResult = await _authService.RefreshTokenAsync();
-            if (!refreshTokenResult)
-            {
-                var userInfo = _authService.GetUserInfoAsync();
+            //var refreshTokenResult = await _authService.RefreshTokenAsync();
+            //if (!refreshTokenResult)
+            //{
+            //    var userInfo = _authService.GetUserInfoAsync();
 
-                await _authService.LogoutAsync(userInfo.Result.Username);
-            }
+            //    await _authService.LogoutAsync(userInfo.Result.Username);
+            //}
 
             var newToken = await _tokenService.GetAccessTokenAsync();
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", newToken);
