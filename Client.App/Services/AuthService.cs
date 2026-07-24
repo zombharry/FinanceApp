@@ -43,7 +43,6 @@ public class AuthService
         await _authenticationStateProvider.NotifyAuthenticationStateChangedAsync();
 
         return (true,null);
-        
     }
 
     public async Task<UserInfo?> GetUserInfoAsync()

@@ -13,61 +13,42 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-var jwtSection = builder.Configuration.GetSection("Jwt");
-var keyBytes = Encoding.UTF8.GetBytes(jwtSection["Key"]);
-var tokenValidationParameters = new TokenValidationParameters
-{
-    ValidateIssuer = true,
-    ValidIssuer = jwtSection["Issuer"],
-    ValidateAudience = true,
-    ValidAudience = jwtSection["Audience"],
-    ValidateIssuerSigningKey = true,
-    IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-    ValidateLifetime = Convert.ToBoolean(jwtSection["ValidateLifetime"] ?? "true")
-};
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CookieStore>();
+builder.Services.AddTransient<CookieForwardingHandler>();
 
-builder.Services.AddSingleton(tokenValidationParameters);
 
-//builder.Services.AddScoped<CookieService>();
-builder.Services.AddScoped<LocalStorageService>();
-builder.Services.AddScoped<AccessTokenService>();
 builder.Services.AddHttpClient("ApiClient", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["AuthApi:BaseUrl"]);
-});
+}).AddHttpMessageHandler<CookieForwardingHandler>();
 
 builder.Services.AddHttpClient("ResourceClient", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ResourceApi:BaseUrl"]);
-});
-
-builder.Services.AddScoped(sp =>
-{
-    var handler = new HttpClientHandler
-    {
-        UseCookies = true,
-        AllowAutoRedirect = false
-    };
-    return new HttpClient(handler)
-    {
-        BaseAddress = new Uri(builder.Configuration["AuthApi:BaseUrl"])
-    };
-});
+}).AddHttpMessageHandler<CookieForwardingHandler>();
 
 builder.Services.AddScoped<AuthService>();
-
-builder.Services.AddAuthentication()
-    .AddScheme<CustomOption, JwtAuthenticationHandler>(
-    "JwtAuth", options => {}
-    );
-
-builder.Services.AddScoped<CustomAuthenticationStateProvider>();
-builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
-builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<ApiService>();
 builder.Services.AddScoped<ResourceService>();
+
+builder.Services.AddScoped<CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
+    sp.GetRequiredService<CustomAuthenticationStateProvider>());
+
+
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
+
+builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict;
+        options.LoginPath = "/login";
+        options.LogoutPath = "/logout";
+        options.ExpireTimeSpan = System.TimeSpan.FromHours(1);
+    });
 
 var app = builder.Build();
 
@@ -88,6 +69,5 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
 
 app.Run();

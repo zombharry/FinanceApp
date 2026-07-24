@@ -26,3 +26,18 @@ function getCookie(name) {
 function removeCookie(name) {
     document.cookie = name + '=; Max-Age=-99999999; path=/';
 }
+async function fetchWithCredentials(url, method, body) {
+    const options = {
+        method: method || 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+    };
+
+    if (body !== undefined && body !== null) {
+        options.body = JSON.stringify(body);
+    }
+
+    const resp = await fetch(url, options);
+    const text = await resp.text();
+    return { ok: resp.ok, status: resp.status, content: text };
+}
