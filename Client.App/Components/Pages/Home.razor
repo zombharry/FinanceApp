@@ -68,6 +68,7 @@
     private async Task Logout()
     {
         await _authService.LogoutAsync(Username);
+        var state = await _authStateProvider.GetAuthenticationStateAsync();
     }
 
     private async Task VerifyGetRequest()

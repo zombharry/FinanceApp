@@ -12,7 +12,6 @@ public class AuthService
     private readonly ILogger<AuthService> _logger;
     private readonly NavigationManager _navigationManager;
     private HttpClient _httpClient;
-    private CookieStore _cookieStore;
     private readonly string _tokenEndpoint;
 
 
@@ -22,13 +21,11 @@ public class AuthService
         NavigationManager navigationManager,
         ILogger<AuthService> logger,
         IConfiguration config,
-        CookieStore cookieStore,
         IHttpClientFactory httpClientFactory)
     {
         _authenticationStateProvider = authenticationStateProvider;
         _navigationManager = navigationManager;
         _logger = logger;
-        _cookieStore = cookieStore;
         _httpClient = httpClientFactory.CreateClient("ApiClient");
         _tokenEndpoint = config["AuthApi:TokenEndpoint"] ?? "/api/auth/login";
     }
@@ -45,8 +42,6 @@ public class AuthService
         }
 
         var values = await response.Content.ReadFromJsonAsync<AuthResponse>();
-
-        //_cookieStore.SetTokenInsideCookie(values, this.HttpContext);
 
         await _authenticationStateProvider.NotifyAuthenticationStateChangedAsync();
 
@@ -144,7 +139,7 @@ public class AuthService
     {
         var payload = new { username };
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-        await _httpClient.PostAsync("api/auth/logout", content);
+        var response = await _httpClient.PostAsync("api/auth/logout", content);
 
         await _authenticationStateProvider.NotifyUserLoggedOut();
     }

@@ -14,19 +14,17 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<CookieStore>();
-builder.Services.AddTransient<CookieForwardingHandler>();
 
 
 builder.Services.AddHttpClient("ApiClient", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["AuthApi:BaseUrl"]);
-}).AddHttpMessageHandler<CookieForwardingHandler>();
+});
 
 builder.Services.AddHttpClient("ResourceClient", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ResourceApi:BaseUrl"]);
-}).AddHttpMessageHandler<CookieForwardingHandler>();
+});
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ApiService>();

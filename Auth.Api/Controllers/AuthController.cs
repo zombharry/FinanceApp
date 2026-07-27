@@ -93,6 +93,7 @@ public class AuthController : ControllerBase
         }
         await _tokenService.RevokeRefreshTokenAsync(user.Id);
         await _signInManager.SignOutAsync();
+        //await _tokenService.UnSetCookies(HttpContext);
         return Ok();
     }
 

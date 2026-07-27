@@ -122,4 +122,10 @@ public class TokenService : ITokenService
                 SameSite = SameSiteMode.None
             });
     }
+
+    public void UnSetCookies(TokenPair tokens, HttpContext context)
+    {
+        context.Response.Cookies.Delete(tokens.AccessToken);
+        context.Response.Cookies.Delete(tokens.RefreshToken);
+    }
 }
