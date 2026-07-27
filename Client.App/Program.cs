@@ -1,7 +1,7 @@
 using Client.App.Components;
 using Client.App.Security;
 using Client.App.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.IdentityModel.Tokens;
@@ -40,15 +40,26 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 
-builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict;
+        options.Cookie.SameSite = SameSiteMode.None;
         options.LoginPath = "/login";
         options.LogoutPath = "/logout";
-        options.ExpireTimeSpan = System.TimeSpan.FromHours(1);
+        options.ExpireTimeSpan = TimeSpan.FromHours(1);
     });
+
+builder.Services.AddCors( options =>
+{
+    options.AddPolicy("CorsPolicy", policy =>
+    {
+        policy.WithOrigins(builder.Configuration["AuthApi:BaseUrl"])
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
@@ -61,6 +72,8 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
+
+app.UseCors("CorsPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();

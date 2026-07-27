@@ -14,45 +14,22 @@
     [Parameter]
     public RouteData RouteData { get; set; }
     private bool _allowed;
-    private bool _hasChecked;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnParametersSetAsync()
     {
-        if (_hasChecked)
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        if (!authState.User.Identity?.IsAuthenticated ?? true)
         {
-            return;
-        }
-
-        _hasChecked = true;
-
-        _allowed = false;
-        try
-        {
-            var authState = await AuthProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-
-            var isAuthenticated = user?.Identity?.IsAuthenticated == true;
-
-            var pageName = RouteData?.PageType?.Name;
-            if (!isAuthenticated && string.Equals(pageName, "Login", StringComparison.OrdinalIgnoreCase))
+            if (RouteData.PageType == typeof(Pages.Login))
             {
                 _allowed = true;
-                StateHasChanged();
                 return;
             }
 
-            if (!isAuthenticated)
-            {
-                Nav.NavigateTo("/login", forceLoad: false);
-                return;
-            }
+            Nav.NavigateTo("/login");
+            return;
+        }
+        _allowed = true;
 
-            _allowed = true;
-            StateHasChanged();
-        }
-        catch
-        {
-            Nav.NavigateTo("/login", forceLoad: false);
-        }
     }
 }

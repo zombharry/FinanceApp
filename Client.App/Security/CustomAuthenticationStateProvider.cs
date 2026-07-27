@@ -48,6 +48,10 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
         var identity = new ClaimsIdentity(claims, "cookie");
         _currentState = new AuthenticationState(new ClaimsPrincipal(identity));
+
+        var isAuthenticated = identity.IsAuthenticated;
+        var test = _currentState.User.Identity?.IsAuthenticated;
+
         return _currentState;
     }
 
