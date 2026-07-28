@@ -1,8 +1,7 @@
 using Client.App.Components;
-using Client.App.Security;
 using Client.App.Services;
+using Client.App.Endpoints;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -26,14 +25,21 @@ builder.Services.AddHttpClient("ResourceClient", client =>
     client.BaseAddress = new Uri(builder.Configuration["ResourceApi:BaseUrl"]);
 });
 
+var jwtSection = builder.Configuration.GetSection("Jwt");
+builder.Services.AddSingleton(new TokenValidationParameters
+{
+    ValidateIssuer = true,
+    ValidIssuer = jwtSection["Issuer"],
+    ValidateAudience = true,
+    ValidAudience = jwtSection["Audience"],
+    ValidateIssuerSigningKey = true,
+    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["Key"]!)),
+    ValidateLifetime = Convert.ToBoolean(jwtSection["ValidateLifetime"] ?? "true")
+});
+
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ApiService>();
 builder.Services.AddScoped<ResourceService>();
-
-builder.Services.AddScoped<CustomAuthenticationStateProvider>();
-builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
-    sp.GetRequiredService<CustomAuthenticationStateProvider>());
-
 
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
@@ -48,17 +54,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(1);
     });
 
-builder.Services.AddCors( options =>
-{
-    options.AddPolicy("CorsPolicy", policy =>
-    {
-        policy.WithOrigins(builder.Configuration["AuthApi:BaseUrl"])
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .AllowCredentials();
-    });
-});
-
+builder.Services.AddAntiforgery();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -71,11 +67,11 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
-app.UseCors("CorsPolicy");
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
+
+app.MapAuthEndpoints();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

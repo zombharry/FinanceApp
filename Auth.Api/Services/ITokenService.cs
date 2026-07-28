@@ -15,4 +15,6 @@ public interface ITokenService
 
     void SetTokenInsideCookie(TokenPair tokens, HttpContext context);
 
+    public void UnSetCookies(TokenPair tokens, HttpContext context);
+
 }

@@ -109,7 +109,8 @@ public class TokenService : ITokenService
                 HttpOnly = true,
                 IsEssential = true,
                 Secure = true,
-                SameSite = SameSiteMode.None
+                SameSite = SameSiteMode.None,
+                Domain = "https://localhost:7237/"
             });
 
         context.Response.Cookies.Append("refreshToken", tokens.RefreshToken,
@@ -119,13 +120,14 @@ public class TokenService : ITokenService
                 HttpOnly = true,
                 IsEssential = true,
                 Secure = true,
-                SameSite = SameSiteMode.None
+                SameSite = SameSiteMode.None,
+                Domain = "https://localhost:7237/"
             });
     }
 
     public void UnSetCookies(TokenPair tokens, HttpContext context)
     {
         context.Response.Cookies.Delete(tokens.AccessToken);
-        context.Response.Cookies.Delete(tokens.RefreshToken);
+        //context.Response.Cookies.Delete(tokens.RefreshToken);
     }
 }

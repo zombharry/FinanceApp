@@ -1,51 +1,28 @@
 ﻿using Client.App.DTO.AuthDtos;
-using Client.App.Security;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 
 namespace Client.App.Services;
 
-public class AuthService
+public class AuthService : IAuthService
 {
-    private readonly CustomAuthenticationStateProvider _authenticationStateProvider;
+    //private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<AuthService> _logger;
-    private readonly NavigationManager _navigationManager;
     private HttpClient _httpClient;
-    private readonly string _tokenEndpoint;
-
-
 
     public AuthService(
-        CustomAuthenticationStateProvider authenticationStateProvider,
-        NavigationManager navigationManager,
+        //IHttpContextAccessor httpContextAccessor,
         ILogger<AuthService> logger,
         IConfiguration config,
         IHttpClientFactory httpClientFactory)
     {
-        _authenticationStateProvider = authenticationStateProvider;
-        _navigationManager = navigationManager;
+        //_httpContextAccessor = httpContextAccessor;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient("ApiClient");
-        _tokenEndpoint = config["AuthApi:TokenEndpoint"] ?? "/api/auth/login";
-    }
-
-    public async Task<(bool Success, string? Error)> LoginAsync(string username, string password)
-    {
-        var payload = new { username, password };
-        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync(_tokenEndpoint, content);
-        if (!response.IsSuccessStatusCode)
-        {
-            var error = await response.Content.ReadAsStringAsync();
-            return(false, error);
-        }
-
-        var values = await response.Content.ReadFromJsonAsync<AuthResponse>();
-
-        await _authenticationStateProvider.NotifyAuthenticationStateChangedAsync();
-
-        return (true,null);
     }
 
     public async Task<UserInfo?> GetUserInfoAsync()
@@ -112,35 +89,4 @@ public class AuthService
         return (true, null);
     }
 
-    //public async Task<bool> RefreshTokenAsync()
-    //{
-    //    var refreshToken = await _refreshTokenService.GetAsync();
-    //    _httpClient.DefaultRequestHeaders.Add("Cookie", $"refreshtoken={refreshToken}");
-    //    var payload = new { refreshToken };
-    //    var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-    //    var response = await _httpClient.PostAsync("/api/auth/refresh", content);
-
-    //    if (response.IsSuccessStatusCode)
-    //    {
-    //        var token = await response.Content.ReadAsStringAsync();
-    //        if (!string.IsNullOrEmpty(token))
-    //        {
-    //            var result = JsonSerializer.Deserialize<AuthResponse>(token);
-    //            await _accessTokenService.SetAccessTokenAsync(result.AccessToken);
-    //            await _refreshTokenService.SetAsync(result.RefreshToken);
-
-    //            return true;
-    //        }
-    //    }
-    //    return false;
-    //}
-
-    public async Task LogoutAsync(string username)
-    {
-        var payload = new { username };
-        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync("api/auth/logout", content);
-
-        await _authenticationStateProvider.NotifyUserLoggedOut();
-    }
 }

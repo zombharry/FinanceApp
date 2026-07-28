@@ -25,8 +25,9 @@
                 _allowed = true;
                 return;
             }
+            var returnUrl = new Uri(Nav.Uri).PathAndQuery;
+            Nav.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
 
-            Nav.NavigateTo("/login");
             return;
         }
         _allowed = true;

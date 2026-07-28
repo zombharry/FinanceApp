@@ -1,4 +1,4 @@
-﻿@inject CustomAuthenticationStateProvider _customAuthenticationStateProvider
+﻿@inject AuthenticationStateProvider _authenticationStateProvider
 @implements IDisposable
 
 <div class="top-row ps-3 navbar navbar-dark">
@@ -51,12 +51,12 @@
     protected override async Task OnInitializedAsync()
     {
         await SetUsernameAsync();
-        _customAuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
+        _authenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
     }
 
     private async Task SetUsernameAsync()
     {
-        var authState = await _customAuthenticationStateProvider.GetAuthenticationStateAsync();
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
         if (user?.Identity?.IsAuthenticated == true)
@@ -80,7 +80,7 @@
 
     public void Dispose()
     {
-        _customAuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
+        _authenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
     }
 
 }

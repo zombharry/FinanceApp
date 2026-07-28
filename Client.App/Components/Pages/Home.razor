@@ -2,9 +2,8 @@
 
 @attribute [Authorize]
 @rendermode InteractiveServer
-@inject CustomAuthenticationStateProvider _authStateProvider
+@inject AuthenticationStateProvider _authStateProvider
 @inject NavigationManager _navigationManager
-@inject AuthService _authService
 @inject ResourceService _resourceService
 
 
@@ -65,10 +64,9 @@
         Username = user.FindFirst(ClaimTypes.GivenName)?.Value;
     }
 
-    private async Task Logout()
+    private void Logout()
     {
-        await _authService.LogoutAsync(Username);
-        var state = await _authStateProvider.GetAuthenticationStateAsync();
+        _navigationManager.NavigateTo("/logout", forceLoad: true);
     }
 
     private async Task VerifyGetRequest()

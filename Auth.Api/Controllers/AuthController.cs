@@ -91,9 +91,11 @@ public class AuthController : ControllerBase
         {
             return Unauthorized();
         }
+        HttpContext.Request.Cookies.TryGetValue("accessToken", out var accesToken);
+        HttpContext.Request.Cookies.TryGetValue("refreshToken", out var refreshToken);
+        var tokenPair = new TokenPair(accesToken, refreshToken);
         await _tokenService.RevokeRefreshTokenAsync(user.Id);
         await _signInManager.SignOutAsync();
-        //await _tokenService.UnSetCookies(HttpContext);
         return Ok();
     }
 
