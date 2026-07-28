@@ -1,8 +1,9 @@
 ﻿@page "/userItems/{username}"
 
-@inject AuthService _authService
+@inject AuthenticationStateProvider _authStateProvider
 @inject ResourceService _resourceService
 @inject NavigationManager _navigationManager
+@inject AuthService _authService
 
 @attribute [Authorize]
 @rendermode InteractiveServer
@@ -39,7 +40,7 @@ else
                     <td>@GetCategoryName(item.CategoryId)</td>
                     <td class="text-end">@((item.Price.HasValue) ? item.Price.Value.ToString("C") : "-")</td>
                     <td>@username</td>
-                    @if (User != null && !string.IsNullOrWhiteSpace(User.Username) && string.Equals(User.Username, username, StringComparison.OrdinalIgnoreCase))
+                    @if (item.OwnerId.ToString().Equals(User.UserId))
                     {
                         <td>
                             <button class="btn btn-sm btn-primary me-2" @onclick='() => _navigationManager.NavigateTo($"/editItem/{item.Id}")'> Edit</button>
@@ -76,7 +77,6 @@ else
         if (!string.IsNullOrWhiteSpace(username))
         {
             var userId = await _authService.GetUserId(username);
-
             Categories = await _resourceService.GetCategories();
             CategoryMap = Categories.ToDictionary(c => c.CategoryId.ToString(), c => c.CategoryName);
 
@@ -90,7 +90,13 @@ else
 
     private async Task GetUserInfo()
     {
-        User = await _authService.GetUserInfoAsync();
+        var state = await _authStateProvider.GetAuthenticationStateAsync();
+        var user = state.User;
+        User = new UserInfo
+        {
+            UserId = user.FindFirst(ClaimTypes.NameIdentifier).Value,
+            Username = user.FindFirst(ClaimTypes.GivenName).Value
+        };
     }
 
     private async Task DeleteItem(Guid id)

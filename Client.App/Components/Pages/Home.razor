@@ -16,6 +16,10 @@
         <td>@Username</td>
     </tr>
     <tr>
+        <td>Id</td>
+        <td>@Id</td>
+    </tr>
+    <tr>
         <td>Current Time</td>
         <td>@CurrentTime</td>
     </tr>
@@ -35,7 +39,8 @@
 </h1>
 
 @code {
-    public string Username { get; set; }
+    public string? Id { get; set; }
+    public string? Username { get; set; }
     public DateTime CurrentTime { get; set; }
     public bool IsVerified { get; set; }
 
@@ -61,6 +66,7 @@
         {
             _navigationManager.NavigateTo("/login");
         }
+        Id = user.FindFirst(ClaimTypes.NameIdentifier).Value;
         Username = user.FindFirst(ClaimTypes.GivenName)?.Value;
     }
 

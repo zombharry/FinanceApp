@@ -10,17 +10,14 @@ namespace Client.App.Services;
 
 public class AuthService : IAuthService
 {
-    //private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<AuthService> _logger;
     private HttpClient _httpClient;
 
     public AuthService(
-        //IHttpContextAccessor httpContextAccessor,
         ILogger<AuthService> logger,
         IConfiguration config,
         IHttpClientFactory httpClientFactory)
     {
-        //_httpContextAccessor = httpContextAccessor;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient("ApiClient");
     }
