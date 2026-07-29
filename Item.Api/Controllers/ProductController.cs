@@ -1,12 +1,15 @@
 ﻿using Item.Api.Data;
 using Item.Api.DTO;
 using Item.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Item.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ProductController : ControllerBase
 {
     private readonly IProductService _productService;
@@ -63,8 +66,15 @@ public class ProductController : ControllerBase
 
 
     [HttpPost("edit")]
-    public async Task<IActionResult> EditProduct(ProductEditDTO productEditDto)
+    public async Task<IActionResult> EditProduct([FromBody]ProductEditDTO productEditDto)
     {
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!IsOwner(currentUserId))
+        {
+            return NotFound();
+        }
+
         var product = new Product
         {
             Id = Guid.Parse(productEditDto.Id),
@@ -81,7 +91,24 @@ public class ProductController : ControllerBase
     [HttpGet("delete")]
     public async Task<ActionResult> DeleteProduct(Guid id)
     {
+        var existing = await _productService.GetProductByIdAsync(id);
+        if (existing is null)
+        {
+            return NotFound();
+        }
+
+        if (!IsOwner(existing.OwnerId))
+        {
+            return NotFound();
+        }
+
         await _productService.DeleteProductAsync(id);
         return Ok();
+    }
+
+    private bool IsOwner(string ownerId)
+    {
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return currentUserId is not null && currentUserId.Equals(ownerId.ToString());
     }
 }
