@@ -72,6 +72,7 @@ app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapAuthEndpoints();
+app.MapItemEndpoints();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

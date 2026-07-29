@@ -88,7 +88,8 @@ public class ProductController : ControllerBase
         await _productService.EditProductAsync(product);
         return Ok();
     }
-    [HttpGet("delete")]
+
+    [HttpDelete("{id:guid}")]
     public async Task<ActionResult> DeleteProduct(Guid id)
     {
         var existing = await _productService.GetProductByIdAsync(id);

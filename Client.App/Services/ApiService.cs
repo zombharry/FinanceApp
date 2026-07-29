@@ -41,7 +41,7 @@ public class ApiService
 
         if (responseMessage.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            var newResponse = await _httpClient.GetAsync(endpoint);
+            var newResponse = await _httpClient.PostAsJsonAsync(endpoint,obj);
 
             return newResponse;
         }
