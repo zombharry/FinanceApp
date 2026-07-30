@@ -9,7 +9,6 @@ namespace Item.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class ProductController : ControllerBase
 {
     private readonly IProductService _productService;

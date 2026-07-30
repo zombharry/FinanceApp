@@ -19,7 +19,7 @@ public class ResourceService
 
     public async Task<IEnumerable<ProductGetDTO>> GetUserItems(Guid userIdentifier)
     {
-        var response = await _apiService.GetAsync($"api/product/getuserproduct?userId={userIdentifier}");
+        var response = await _apiService.GetAsync($"api/product/getuserproduct?userId={userIdentifier.ToString()}");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -84,6 +84,8 @@ public class ResourceService
         {
             return Enumerable.Empty<CategoryGetDTO>();
         }
+
+        var responseString = await response.Content.ReadAsStringAsync();
 
         await using var responseStream = await response.Content.ReadAsStreamAsync();
         var options = new JsonSerializerOptions
