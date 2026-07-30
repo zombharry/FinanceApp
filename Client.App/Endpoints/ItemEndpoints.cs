@@ -26,36 +26,45 @@ public static class ItemEndpoints
         return app;
     }
 
-    private static async Task<IResult> GetAllProductsAsync(IHttpClientFactory httpClientFactory)
+    private static async Task<IResult> GetAllProductsAsync(HttpContext httpContext, IHttpClientFactory httpClientFactory)
     {
         var client = httpClientFactory.CreateClient("ResourceClient");
+
+        await AttachTokenAsync(client, httpContext);
         var response = await client.GetAsync("api/product/getallproduct");
         return await ForwardAsync(response);
     }
 
     private static async Task<IResult> GetUserProductsAsync(
         Guid userId,
+        HttpContext httpContext,
         IHttpClientFactory httpClientFactory)
     {
         var client = httpClientFactory.CreateClient("ResourceClient");
-        var response = await client.GetAsync($"api/product/getuserproduct?userId={userId}");
+        await AttachTokenAsync(client, httpContext);
+
+        var response = await client.GetAsync($"api/product/getuserproduct?userId={userId.ToString()}");
         return await ForwardAsync(response);
     }
 
     private static async Task<IResult> GetByIdAsync(
         Guid productId,
+        HttpContext httpContext,
         IHttpClientFactory httpClientFactory)
     {
         var client = httpClientFactory.CreateClient("ResourceClient");
+        await AttachTokenAsync(client, httpContext);
         var response = await client.GetAsync($"api/product/getbyid?productId={productId}");
         return await ForwardAsync(response);
     }
 
     private static async Task<IResult> CreateAsync(
         ProductCreateDto dto,
+        HttpContext httpContext,
         IHttpClientFactory httpClientFactory)
     {
         var client = httpClientFactory.CreateClient("ResourceClient");
+        await AttachTokenAsync(client, httpContext);
         var response = await client.PostAsJsonAsync("api/product/create", dto);
         return await ForwardAsync(response);
     }
@@ -63,9 +72,11 @@ public static class ItemEndpoints
     private static async Task<IResult> EditAsync(
         ProductEditDTO dto,
         ClaimsPrincipal user,
+        HttpContext httpContext,
         IHttpClientFactory httpClientFactory)
     {
         var client = httpClientFactory.CreateClient("ResourceClient");
+        await AttachTokenAsync(client, httpContext);
 
         var ownershipCheck = await CheckOwnershipAsync(client, Guid.Parse(dto.Id), user);
         if (ownershipCheck is not null) return ownershipCheck;
@@ -77,9 +88,11 @@ public static class ItemEndpoints
     private static async Task<IResult> DeleteAsync(
         Guid id,
         ClaimsPrincipal user,
+        HttpContext httpContext,
         IHttpClientFactory httpClientFactory)
     {
         var client = httpClientFactory.CreateClient("ResourceClient");
+        await AttachTokenAsync(client, httpContext);
 
         var ownershipCheck = await CheckOwnershipAsync(client, id, user);
         if (ownershipCheck is not null) return ownershipCheck;
@@ -117,5 +130,16 @@ public static class ItemEndpoints
             content,
             contentType: "application/json",
             statusCode: (int)response.StatusCode);
+    }
+    private static async Task AttachTokenAsync(HttpClient client, HttpContext httpContext)
+    {
+        var accessToken = await httpContext.GetTokenAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme, "access_token");
+
+        if (!string.IsNullOrEmpty(accessToken))
+        {
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", accessToken);
+        }
     }
 }

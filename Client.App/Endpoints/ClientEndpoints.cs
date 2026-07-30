@@ -56,12 +56,17 @@ public static class ClientEndpoints
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
-
-            await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, new AuthenticationProperties
+            var props = new AuthenticationProperties
             {
                 IsPersistent = true,
                 ExpiresUtc = DateTimeOffset.UtcNow.AddHours(1)
+            };
+            props.StoreTokens(new[] 
+            {
+                new AuthenticationToken { Name = "access_token", Value = tokens.AccessToken }
             });
+
+            await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
 
             return Results.Redirect(IsLocalUrl(returnUrl) ? returnUrl : "/");
         });

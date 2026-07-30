@@ -16,7 +16,7 @@ public static class CategoryEndpoints
 
     private static async Task<IResult> GetAllAsync(IHttpClientFactory httpClientFactory)
     {
-        var client = httpClientFactory.CreateClient("ResourceClient"); // FONTOS: ez a külső Product Api-ra mutat
+        var client = httpClientFactory.CreateClient("ResourceClient");
         var response = await client.GetAsync("api/category/getall");
         return await ForwardAsync(response);
     }
