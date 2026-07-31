@@ -22,59 +22,24 @@ var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnec
 
 builder.Services.AddDbContext<ProductDbContext>(options => options.UseSqlite(defaultConnection));
 
-//builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-//    .AddCookie(options =>
-//    {
-//        options.Cookie.Name = ".FinanceAppSuite.Auth";
-//        options.Cookie.HttpOnly = true;
-//        options.Cookie.SameSite = SameSiteMode.Lax;
-//        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-//        options.ExpireTimeSpan = TimeSpan.FromHours(1);
-//        options.SlidingExpiration = true;
-//    });
-
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var keyBytes = Encoding.UTF8.GetBytes(jwtSection["Key"]);
-var tokenValidationParameters = new TokenValidationParameters
-{
-    ValidateIssuer = true,
-    ValidIssuer = jwtSection["Issuer"],
-    ValidateAudience = true,
-    ValidAudience = jwtSection["Audience"],
-    ValidateIssuerSigningKey = true,
-    IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-    ValidateLifetime = Convert.ToBoolean(jwtSection["ValidateLifetime"] ?? "true")
-};
-
-builder.Services
-    .AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
+var keyBytes = Encoding.UTF8.GetBytes(jwtSection["Key"]!);
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = tokenValidationParameters;
-
-        options.Events = new JwtBearerEvents
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            OnMessageReceived = ctx =>
-            {
-                ctx.Request.Cookies.TryGetValue("accessToken", out var accessToken);
-                if (!string.IsNullOrEmpty(accessToken))
-                {
-                    ctx.Token = accessToken;
-                }
-                return Task.CompletedTask;
-            },
-            OnChallenge = ctx =>
-            {
-                return Task.CompletedTask;
-            }
+            ValidateIssuer = true,
+            ValidIssuer = jwtSection["Issuer"],
+            ValidateAudience = true,
+            ValidAudience = jwtSection["Audience"],
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+            ValidateLifetime = true
         };
     });
 
+builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -85,6 +50,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

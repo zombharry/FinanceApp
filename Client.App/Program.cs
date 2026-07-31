@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Client.App.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddTransient<TokenForwardingHandler>();
 
 builder.Services.AddHttpClient("ApiClient", client =>
 {
@@ -23,7 +25,7 @@ builder.Services.AddHttpClient("ApiClient", client =>
 builder.Services.AddHttpClient("ResourceClient", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ResourceApi:BaseUrl"]);
-});
+}).AddHttpMessageHandler<TokenForwardingHandler>(); ;
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 builder.Services.AddSingleton(new TokenValidationParameters

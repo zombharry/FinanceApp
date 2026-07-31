@@ -61,7 +61,7 @@ public class ResourceService
     public async Task CreateNewItem(ProductCreateDto item)
     {
         var client = await CreateAuthorizedClient();
-        var response = await client.PostAsJsonAsync("api/Product/create", item);
+        var response = await client.PostAsJsonAsync("api/product/create", item);
 
         response.EnsureSuccessStatusCode();
     }
