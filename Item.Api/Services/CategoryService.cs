@@ -48,5 +48,10 @@ namespace Item.Api.Services
         {
             return await _context.Categories.FirstOrDefaultAsync(p => p.Id.ToString().Equals(id));
         }
+
+        public async Task GetAmount()
+        {
+
+        }
     }
 }

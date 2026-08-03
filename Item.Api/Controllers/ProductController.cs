@@ -42,7 +42,6 @@ public class ProductController : ControllerBase
             Name = productGet.Name,
             Description = productGet.Description,
             Price = productGet.Price,
-            OwnerId = productGet.OwnerId,
             CategoryId = productGet.CategoryId
         };
         return Ok(productGetDto);
@@ -56,7 +55,6 @@ public class ProductController : ControllerBase
             Name = productCreateDto.Name,
             Description = productCreateDto.Description,
             Price = productCreateDto.Price,
-            OwnerId = productCreateDto.OwnerId,
             CategoryId = productCreateDto.CategoryId
         };
 
@@ -81,7 +79,6 @@ public class ProductController : ControllerBase
             Name = productEditDto.Name,
             Description = productEditDto.Description,
             Price = productEditDto.Price,
-            OwnerId = productEditDto.OwnerId,
             CategoryId = productEditDto.CategoryId
         };
 
@@ -98,10 +95,10 @@ public class ProductController : ControllerBase
             return NotFound();
         }
 
-        if (!IsOwner(existing.OwnerId))
-        {
-            return NotFound();
-        }
+        //if (!IsOwner(existing.OwnerId))
+        //{
+        //    return NotFound();
+        //}
 
         await _productService.DeleteProductAsync(id);
         return Ok();

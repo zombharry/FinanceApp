@@ -6,7 +6,7 @@ namespace Item.Api.Services
     {
         public Task<IEnumerable<Product>> GetAllProductAsync();
 
-        public Task<IEnumerable<Product>> GetUserProductAsync(string userId);
+        public Task<IEnumerable<PurchasedProduct>> GetUserProductAsync(string userId);
 
         public Task<Product> GetProductByIdAsync(Guid id);
 

@@ -54,9 +54,9 @@ namespace Item.Api.Services
             return await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        public async Task<IEnumerable<Product>> GetUserProductAsync(string userId)
+        public async Task<IEnumerable<PurchasedProduct>> GetUserProductAsync(string userId)
         {
-            var products = await _context.Products.Where(p => p.OwnerId == userId).ToListAsync();
+            var products = await _context.PurchasedProducts.Where(p => p.OwnerId == userId).ToListAsync();
 
             return products;
         }

@@ -1,12 +1,12 @@
 ﻿namespace Item.Api.Data
 {
-    public class Category
+    public class Category : BaseEntity
     {
         public Guid Id { get; set; }
 
         public string Name { get; set; }
 
-        public ICollection<Product> Products { get; } = new List<Product>();
+        public ICollection<PurchasedProduct> Products { get; } = new List<PurchasedProduct>();
 
     }
 }
