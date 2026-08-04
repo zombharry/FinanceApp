@@ -1,5 +1,6 @@
 using Item.Api.Data;
 using Item.Api.Services;
+using Item.Api.TestData;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,8 @@ builder.Services.AddScoped<IProductService, ProductService>();
 var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnectionString");
 
 builder.Services.AddDbContext<ProductDbContext>(options => options.UseSqlite(defaultConnection));
+
+builder.Services.AddScoped<Seeder>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var keyBytes = Encoding.UTF8.GetBytes(jwtSection["Key"]!);
@@ -70,6 +73,7 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
+    app.Services.CreateScope().ServiceProvider.GetRequiredService<Seeder>().Seed();
 }
 
 app.UseHttpsRedirection();
