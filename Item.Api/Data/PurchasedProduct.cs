@@ -12,6 +12,8 @@ public class PurchasedProduct : BaseEntity
 
     public double? PriceAtPurchase { get; set; }
 
+    public int Amount { get; set; }
+
     public string OwnerId { get; set; }
 
     public Guid CategoryId { get; set; }

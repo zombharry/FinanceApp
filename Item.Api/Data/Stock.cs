@@ -10,6 +10,12 @@ public class Stock : BaseEntity
 
     public int Quantity { get; set; }
 
-    [Timestamp]
-    public byte[] RowVersion { get; set; } 
+    //SQLite specific concurrency token for optimistic concurrency control
+    [ConcurrencyCheck]
+    public Guid Version { get; set; }
+
+    // SQL Server specific concurrency token for optimistic concurrency control
+
+    //[Timestamp]
+    //public byte[] RowVersion { get; set; } 
 }
